@@ -1,0 +1,4880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0a0e1a">
+    <meta name="description" content="ARC Raiders Tactical Loadout Optimizer - Track weapons, manage your arsenal, and plan your raids">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==">
+    <title>Arc Raiders - Tactical Loadout Optimizer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Teko:wght@400;600;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #00fff2;
+            --secondary: #ff6b35;
+            --dark: #0a0e1a;
+            --darker: #050812;
+            --gray: #1a2332;
+            --light-gray: #2a3544;
+            --accent: #7c3aed;
+            --success: #10b981;
+            --damage: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: var(--darker);
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(0, 255, 242, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255, 107, 53, 0.03) 0%, transparent 50%),
+                linear-gradient(180deg, var(--darker) 0%, var(--dark) 100%);
+            z-index: -1;
+        }
+
+        .scan-line {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--primary), transparent);
+            opacity: 0.3;
+            z-index: 1000;
+            pointer-events: none;
+        }
+
+        .noise {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.02;
+            z-index: 999;
+            pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='4' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        header {
+            padding: 2rem;
+            border-bottom: 2px solid rgba(0, 255, 242, 0.3);
+            position: relative;
+            background: rgba(10, 14, 26, 0.95);
+            backdrop-filter: blur(10px);
+        }
+
+        .hamburger-menu {
+            position: absolute;
+            top: 2rem;
+            right: 2rem;
+            width: 40px;
+            height: 40px;
+            background: transparent;
+            border: 2px solid var(--primary);
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+            padding: 8px;
+            transition: all 0.3s ease;
+            z-index: 101;
+        }
+
+        .hamburger-menu:hover {
+            background: rgba(0, 255, 242, 0.1);
+            box-shadow: 0 0 15px rgba(0, 255, 242, 0.3);
+        }
+
+        .hamburger-menu.active {
+            background: var(--primary);
+        }
+
+        .hamburger-line {
+            width: 100%;
+            height: 2px;
+            background: var(--primary);
+            transition: all 0.3s ease;
+        }
+
+        .hamburger-menu.active .hamburger-line {
+            background: var(--dark);
+        }
+
+        .hamburger-dropdown {
+            position: fixed;
+            top: 80px;
+            right: 2rem;
+            background: var(--darker);
+            border: 2px solid var(--primary);
+            border-radius: 8px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            padding: 0.5rem 0;
+            min-width: 200px;
+            display: none;
+            z-index: 100;
+            animation: slideDown 0.3s ease;
+        }
+
+        .hamburger-dropdown.show {
+            display: block;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .dropdown-header {
+            padding: 0.75rem 1.25rem;
+            font-family: 'Teko', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            border-bottom: 1px solid rgba(0, 255, 242, 0.2);
+            margin-bottom: 0.5rem;
+        }
+
+        .dropdown-item {
+            width: 100%;
+            padding: 0.75rem 1.25rem;
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.9);
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 600;
+            font-size: 1rem;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .dropdown-item:hover {
+            background: rgba(0, 255, 242, 0.1);
+            color: var(--primary);
+        }
+
+        .dropdown-icon {
+            font-size: 1.3rem;
+        }
+
+        .dropdown-text {
+            flex: 1;
+        }
+
+        .quick-stats-summary {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin: 1rem 0;
+            flex-wrap: wrap;
+        }
+
+        .stat-pill {
+            background: rgba(0, 255, 242, 0.1);
+            border: 1px solid rgba(0, 255, 242, 0.3);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.8);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .stat-pill span {
+            color: var(--primary);
+            font-weight: 700;
+        }
+
+        .autosave-indicator {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: rgba(16, 185, 129, 0.95);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 30px;
+            display: none;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 700;
+            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+            z-index: 1000;
+            animation: slideInUp 0.3s ease;
+        }
+
+        .autosave-indicator.show {
+            display: flex;
+        }
+
+        @keyframes slideInUp {
+            from {
+                transform: translateY(100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .scroll-to-top {
+            position: fixed;
+            bottom: 2rem;
+            left: 2rem;
+            width: 50px;
+            height: 50px;
+            background: var(--primary);
+            color: var(--dark);
+            border: none;
+            border-radius: 50%;
+            font-size: 1.5rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 20px rgba(0, 255, 242, 0.5);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .scroll-to-top.show {
+            display: flex;
+        }
+
+        .scroll-to-top:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 25px rgba(0, 255, 242, 0.7);
+        }
+
+        .sort-label {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--primary);
+            letter-spacing: 0.05em;
+        }
+
+        .sort-select {
+            padding: 0.6rem 1rem;
+            background: var(--dark);
+            border: 2px solid rgba(0, 255, 242, 0.4);
+            color: var(--primary);
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-radius: 4px;
+        }
+
+        .sort-select:hover {
+            border-color: var(--primary);
+            box-shadow: 0 0 15px rgba(0, 255, 242, 0.3);
+        }
+
+        .clear-all-btn {
+            border-color: rgba(239, 68, 68, 0.5) !important;
+            color: #ef4444 !important;
+        }
+
+        .clear-all-btn:hover {
+            background: rgba(239, 68, 68, 0.1) !important;
+            border-color: #ef4444 !important;
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.3) !important;
+        }
+
+        h1 {
+            font-family: 'Teko', sans-serif;
+            font-size: 4rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            color: var(--primary);
+            text-transform: uppercase;
+            text-shadow: 0 0 20px rgba(0, 255, 242, 0.5), 0 0 40px rgba(0, 255, 242, 0.2);
+            animation: glitch 3s infinite;
+        }
+
+        @keyframes glitch {
+            0%, 90%, 100% { transform: translate(0); }
+            91% { transform: translate(-2px, 2px); }
+            93% { transform: translate(2px, -2px); }
+            95% { transform: translate(-1px, 1px); }
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: var(--secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.3em;
+            margin-top: 0.5rem;
+            opacity: 0.8;
+        }
+
+        .main-nav {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+            justify-content: center;
+        }
+
+        .nav-btn {
+            padding: 0.75rem 2rem;
+            background: transparent;
+            border: 2px solid rgba(0, 255, 242, 0.3);
+            color: var(--primary);
+            font-family: 'Teko', sans-serif;
+            font-weight: 700;
+            font-size: 1.3rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .nav-btn:hover {
+            background: rgba(0, 255, 242, 0.1);
+            border-color: var(--primary);
+            box-shadow: 0 0 15px rgba(0, 255, 242, 0.3);
+        }
+
+        .nav-btn.active {
+            background: var(--primary);
+            color: var(--dark);
+            border-color: var(--primary);
+            box-shadow: 0 0 25px rgba(0, 255, 242, 0.5);
+        }
+
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        .search-container {
+            position: relative;
+            max-width: 600px;
+            margin: 1.5rem auto 0;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 1rem 3rem 1rem 1.5rem;
+            background: rgba(0, 255, 242, 0.05);
+            border: 2px solid rgba(0, 255, 242, 0.3);
+            color: var(--primary);
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .search-input::placeholder {
+            color: rgba(0, 255, 242, 0.4);
+        }
+
+        .search-input:focus {
+            outline: none;
+            background: rgba(0, 255, 242, 0.1);
+            border-color: var(--primary);
+            box-shadow: 0 0 20px rgba(0, 255, 242, 0.3);
+        }
+
+        .clear-search-btn {
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: transparent;
+            border: none;
+            color: var(--primary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            transition: all 0.3s ease;
+            opacity: 0.6;
+        }
+
+        .clear-search-btn:hover {
+            opacity: 1;
+            transform: translateY(-50%) scale(1.2);
+        }
+
+        .search-results-info {
+            text-align: center;
+            padding: 1rem;
+            color: var(--primary);
+            font-family: 'Teko', sans-serif;
+            font-size: 1.3rem;
+            letter-spacing: 0.1em;
+            background: rgba(0, 255, 242, 0.05);
+            border: 1px solid rgba(0, 255, 242, 0.2);
+            margin-bottom: 1rem;
+        }
+
+        .search-highlight {
+            background: rgba(255, 215, 0, 0.3);
+            color: #ffd700;
+            padding: 0.1rem 0.2rem;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .filter-bar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            background: var(--gray);
+            padding: 1.5rem;
+            padding-top: 2rem;
+            border: 1px solid rgba(0, 255, 242, 0.2);
+            border-left: 3px solid var(--primary);
+            position: relative;
+        }
+
+        .filter-bar::before {
+            content: 'WEAPON FILTER';
+            position: absolute;
+            top: 0.5rem;
+            left: 1.5rem;
+            font-size: 0.75rem;
+            color: var(--primary);
+            letter-spacing: 0.2em;
+            opacity: 0.7;
+        }
+
+        .mode-toggle {
+            display: flex;
+            flex-direction: row;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            justify-content: center;
+            background: var(--dark);
+            padding: 1rem;
+            border: 1px solid rgba(255, 107, 53, 0.3);
+            border-left: 3px solid var(--secondary);
+        }
+
+        .mode-btn {
+            padding: 0.75rem 2rem;
+            background: transparent;
+            border: 2px solid rgba(255, 107, 53, 0.3);
+            color: var(--secondary);
+            font-family: 'Teko', sans-serif;
+            font-weight: 700;
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            flex: 0 1 auto;
+            white-space: nowrap;
+        }
+
+        .mode-btn:hover {
+            background: rgba(255, 107, 53, 0.1);
+            border-color: var(--secondary);
+            box-shadow: 0 0 15px rgba(255, 107, 53, 0.3);
+        }
+
+        .mode-btn.active {
+            background: var(--secondary);
+            color: var(--dark);
+            border-color: var(--secondary);
+            box-shadow: 0 0 25px rgba(255, 107, 53, 0.5);
+        }
+
+        .arsenal-controls {
+            display: flex;
+            flex-direction: row;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .top-controls {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            padding: 1rem;
+            background: rgba(0, 255, 242, 0.03);
+            border-bottom: 1px solid rgba(0, 255, 242, 0.1);
+        }
+
+        .control-group {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .control-btn {
+            padding: 0.6rem 1.2rem;
+            background: transparent;
+            border: 2px solid rgba(124, 58, 237, 0.4);
+            color: var(--accent);
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            white-space: nowrap;
+        }
+
+        .control-btn:hover {
+            background: rgba(124, 58, 237, 0.1);
+            border-color: var(--accent);
+            box-shadow: 0 0 15px rgba(124, 58, 237, 0.3);
+        }
+
+        .filters-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .filters-row {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .mode-toggle-compact {
+            display: flex;
+            gap: 0.5rem;
+            background: rgba(255, 107, 53, 0.1);
+            padding: 0.5rem;
+            border: 1px solid rgba(255, 107, 53, 0.3);
+            border-radius: 4px;
+        }
+
+        .quick-presets-compact {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .ammo-filter-bar-compact {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .arsenal-btn {
+            padding: 0.75rem 1.5rem;
+            background: var(--dark);
+            border: 2px solid rgba(124, 58, 237, 0.5);
+            color: var(--accent);
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex: 0 1 auto;
+            white-space: nowrap;
+        }
+
+        .arsenal-btn:hover {
+            background: rgba(124, 58, 237, 0.1);
+            border-color: var(--accent);
+            box-shadow: 0 0 15px rgba(124, 58, 237, 0.3);
+        }
+
+        .favorite-filter-btn {
+            border-color: rgba(255, 215, 0, 0.5);
+            color: #ffd700;
+        }
+
+        .favorite-filter-btn:hover {
+            background: rgba(255, 215, 0, 0.1);
+            border-color: #ffd700;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+        }
+
+        .favorite-filter-btn .badge {
+            background: #ffd700;
+            color: var(--dark);
+        }
+
+        .export-btn {
+            border-color: rgba(16, 185, 129, 0.5);
+            color: var(--success);
+        }
+
+        .export-btn:hover {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: var(--success);
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
+        }
+
+        .import-btn {
+            border-color: rgba(59, 130, 246, 0.5);
+            color: #3b82f6;
+        }
+
+        .import-btn:hover {
+            background: rgba(59, 130, 246, 0.1);
+            border-color: #3b82f6;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+        }
+
+        .loot-focus-btn {
+            border-color: rgba(245, 158, 11, 0.5);
+            color: var(--warning);
+        }
+
+        .loot-focus-btn:hover {
+            background: rgba(245, 158, 11, 0.1);
+            border-color: var(--warning);
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
+        }
+
+        .badge {
+            background: var(--accent);
+            color: var(--dark);
+            padding: 0.15rem 0.5rem;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 700;
+        }
+
+        .loot-focus-btn .badge {
+            background: var(--warning);
+        }
+
+        .filter-btn {
+            padding: 0.5rem 1.5rem;
+            background: transparent;
+            border: 2px solid rgba(0, 255, 242, 0.3);
+            color: var(--primary);
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 600;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .filter-btn:hover {
+            background: rgba(0, 255, 242, 0.1);
+            border-color: var(--primary);
+        }
+
+        .filter-btn.active {
+            background: var(--primary);
+            color: var(--dark);
+            box-shadow: 0 0 15px rgba(0, 255, 242, 0.4);
+        }
+
+        .ammo-filter-bar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            align-items: center;
+            background: var(--dark);
+            padding: 1rem;
+            border: 1px solid rgba(0, 255, 242, 0.2);
+            border-left: 3px solid var(--primary);
+        }
+
+        .ammo-filter-label {
+            font-family: 'Teko', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--primary);
+            letter-spacing: 0.1em;
+        }
+
+        .ammo-filter-btn {
+            padding: 0.6rem 1.5rem;
+            background: transparent;
+            border: 2px solid rgba(0, 255, 242, 0.3);
+            color: var(--primary);
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .ammo-filter-btn:hover {
+            background: rgba(0, 255, 242, 0.1);
+            border-color: var(--primary);
+            box-shadow: 0 0 15px rgba(0, 255, 242, 0.2);
+        }
+
+        .ammo-filter-btn.active {
+            background: var(--primary);
+            color: var(--dark);
+            border-color: var(--primary);
+            box-shadow: 0 0 20px rgba(0, 255, 242, 0.3);
+        }
+
+        .quick-presets {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            align-items: center;
+            background: rgba(124, 58, 237, 0.05);
+            padding: 1rem;
+            border: 1px solid rgba(124, 58, 237, 0.2);
+            border-left: 3px solid var(--accent);
+        }
+
+        .preset-label {
+            font-family: 'Teko', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--accent);
+            letter-spacing: 0.1em;
+        }
+
+        .preset-btn {
+            padding: 0.5rem 1.2rem;
+            background: transparent;
+            border: 2px solid rgba(124, 58, 237, 0.4);
+            color: var(--accent);
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .preset-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(124, 58, 237, 0.2);
+            transform: translate(-50%, -50%);
+            transition: width 0.4s, height 0.4s;
+        }
+
+        .preset-btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .preset-btn:hover {
+            background: rgba(124, 58, 237, 0.15);
+            border-color: var(--accent);
+            box-shadow: 0 0 15px rgba(124, 58, 237, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .preset-btn:active {
+            transform: translateY(0);
+        }
+
+        .preset-btn.active {
+            background: var(--accent);
+            color: var(--dark);
+            border-color: var(--accent);
+            box-shadow: 0 0 20px rgba(124, 58, 237, 0.6);
+        }
+
+        .loadout-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .loadout-card {
+            background: var(--gray);
+            border: 1px solid rgba(0, 255, 242, 0.2);
+            border-left: 4px solid var(--primary);
+            padding: 1.5rem;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .favorite-btn {
+            background: transparent !important;
+            border: none !important;
+            font-size: 1.8rem !important;
+            cursor: pointer !important;
+            transition: all 0.3s ease;
+            opacity: 0.5 !important;
+            padding: 0.2rem !important;
+            flex-shrink: 0;
+            line-height: 1;
+            display: inline-flex !important;
+            align-items: center;
+            justify-content: center;
+            color: #ffd700 !important;
+        }
+
+        .favorite-btn:hover {
+            transform: scale(1.2);
+            opacity: 1 !important;
+        }
+
+        .favorite-btn.active {
+            opacity: 1 !important;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .loadout-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(0, 255, 242, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .loadout-card:hover {
+            border-color: var(--primary);
+            box-shadow: 0 0 30px rgba(0, 255, 242, 0.2);
+            transform: translateY(-5px);
+        }
+
+        .tier-badge {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            padding: 0.5rem 1rem;
+            font-family: 'Teko', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: var(--darker);
+            border: 2px solid;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            z-index: 2;
+        }
+
+        .tier-common { 
+            color: #9ca3af; 
+            border-color: #9ca3af;
+        }
+        .tier-uncommon { 
+            color: #10b981; 
+            border-color: #10b981;
+            text-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+        }
+        .tier-rare { 
+            color: #3b82f6; 
+            border-color: #3b82f6;
+            text-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+        }
+        .tier-epic { 
+            color: #a855f7; 
+            border-color: #a855f7;
+            text-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
+        }
+        .tier-legendary { 
+            color: #f97316; 
+            border-color: #f97316;
+            text-shadow: 0 0 10px rgba(249, 115, 22, 0.5);
+        }
+
+        .weapon-header {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .weapon-name {
+            font-family: 'Teko', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            line-height: 1;
+            text-shadow: 0 0 10px rgba(0, 255, 242, 0.3);
+        }
+
+        .weapon-meta {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .weapon-type {
+            font-size: 0.9rem;
+            color: var(--secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            opacity: 0.8;
+        }
+
+        .ammo-badge {
+            padding: 0.6rem 1rem;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            border-radius: 4px;
+            white-space: nowrap;
+            display: inline-block;
+        }
+
+        .ammo-light {
+            background: rgba(76, 175, 80, 0.25);
+            color: #81c784;
+            border: 2px solid rgba(76, 175, 80, 0.6);
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
+        }
+
+        .ammo-medium {
+            background: rgba(255, 193, 7, 0.25);
+            color: #ffd54f;
+            border: 2px solid rgba(255, 193, 7, 0.6);
+            box-shadow: 0 0 10px rgba(255, 193, 7, 0.3);
+        }
+
+        .ammo-heavy {
+            background: rgba(244, 67, 54, 0.25);
+            color: #e57373;
+            border: 2px solid rgba(244, 67, 54, 0.6);
+            box-shadow: 0 0 10px rgba(244, 67, 54, 0.3);
+        }
+
+        .ammo-special {
+            background: rgba(156, 39, 176, 0.25);
+            color: #ba68c8;
+            border: 2px solid rgba(156, 39, 176, 0.6);
+            box-shadow: 0 0 10px rgba(156, 39, 176, 0.3);
+        }
+
+        .loadout-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(0, 255, 242, 0.1);
+        }
+
+        .stat {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.6);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .stat-value {
+            font-family: 'Teko', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .stat-bar {
+            height: 6px;
+            background: rgba(0, 255, 242, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .stat-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            border-radius: 3px;
+            transition: width 0.6s ease;
+            box-shadow: 0 0 10px rgba(0, 255, 242, 0.5);
+        }
+
+        .stat-comparison {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 0.2rem;
+        }
+
+        .stat-comparison.positive {
+            color: #4caf50;
+        }
+
+        .stat-comparison.negative {
+            color: #f44336;
+        }
+
+        .secondary-weapon {
+            background: rgba(255, 107, 53, 0.1);
+            border: 1px solid rgba(255, 107, 53, 0.3);
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .secondary-label {
+            font-size: 0.75rem;
+            color: var(--secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            margin-bottom: 0.5rem;
+        }
+
+        .secondary-name {
+            font-family: 'Teko', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--secondary);
+        }
+
+        .throwables {
+            background: rgba(124, 58, 237, 0.15);
+            border: 1px solid rgba(124, 58, 237, 0.5);
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .throwables-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .throwables-icon {
+            width: 20px;
+            height: 20px;
+            background: var(--accent);
+            border-radius: 50%;
+            position: relative;
+        }
+
+        .throwables-icon::after {
+            content: '💣';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 0.7rem;
+        }
+
+        .throwables-title {
+            font-size: 0.85rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            font-weight: 700;
+        }
+
+        .throwable-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .throwable-tag {
+            padding: 0.4rem 0.9rem;
+            background: rgba(124, 58, 237, 0.3);
+            border: 2px solid var(--accent);
+            font-size: 0.9rem;
+            color: #fff;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .best-for {
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background: rgba(0, 255, 242, 0.05);
+            border-left: 3px solid var(--primary);
+        }
+
+        .best-for-label {
+            font-size: 0.75rem;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            margin-bottom: 0.5rem;
+        }
+
+        .best-for-text {
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.6;
+        }
+
+        .pros-cons-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .pros-column,
+        .cons-column {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1rem;
+            border-radius: 4px;
+        }
+
+        .pros-column {
+            border-left: 3px solid #4caf50;
+        }
+
+        .cons-column {
+            border-left: 3px solid #f44336;
+        }
+
+        .pros-header,
+        .cons-header {
+            font-weight: 700;
+            font-size: 0.85rem;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.75rem;
+        }
+
+        .pros-header {
+            color: #66bb6a;
+        }
+
+        .cons-header {
+            color: #ef5350;
+        }
+
+        .pros-list,
+        .cons-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .pros-list li,
+        .cons-list li {
+            padding: 0.4rem 0;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            color: rgba(255, 255, 255, 0.85);
+        }
+
+        .pros-list li::before {
+            content: '✓ ';
+            color: #66bb6a;
+            font-weight: 700;
+            margin-right: 0.5rem;
+        }
+
+        .cons-list li::before {
+            content: '✗ ';
+            color: #ef5350;
+            font-weight: 700;
+            margin-right: 0.5rem;
+        }
+
+        .mode-info {
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-left: 3px solid;
+        }
+
+        .pve-info {
+            background: rgba(16, 185, 129, 0.05);
+            border-color: var(--success);
+        }
+
+        .pvp-info {
+            background: rgba(239, 68, 68, 0.05);
+            border-color: var(--damage);
+        }
+
+        .mode-info-label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            margin-bottom: 0.5rem;
+        }
+
+        .pve-info .mode-info-label {
+            color: var(--success);
+        }
+
+        .pvp-info .mode-info-label {
+            color: var(--damage);
+        }
+
+        .mode-info-text {
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.6;
+        }
+
+        .mode-icon {
+            font-size: 1rem;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 2000;
+            overflow-y: auto;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: var(--dark);
+            border: 2px solid var(--accent);
+            max-width: 1200px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 0 50px rgba(124, 58, 237, 0.5);
+        }
+
+        .modal-header {
+            background: var(--gray);
+            padding: 2rem;
+            border-bottom: 2px solid var(--accent);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .modal-title {
+            font-family: 'Teko', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.5rem;
+        }
+
+        .modal-subtitle {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1rem;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            width: 40px;
+            height: 40px;
+            background: transparent;
+            border: 2px solid var(--accent);
+            color: var(--accent);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close-modal:hover {
+            background: var(--accent);
+            color: var(--dark);
+            transform: rotate(90deg);
+        }
+
+        .modal-body {
+            padding: 2rem;
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .quick-action-btn {
+            padding: 0.75rem 1.5rem;
+            background: var(--gray);
+            border: 2px solid rgba(124, 58, 237, 0.5);
+            color: var(--accent);
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .quick-action-btn:hover {
+            background: rgba(124, 58, 237, 0.2);
+            border-color: var(--accent);
+        }
+
+        .weapon-selection-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .weapon-select-item {
+            background: var(--gray);
+            border: 2px solid rgba(124, 58, 237, 0.3);
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .weapon-select-item:hover {
+            border-color: var(--accent);
+            background: rgba(124, 58, 237, 0.1);
+        }
+
+        .weapon-select-item.selected {
+            border-color: var(--accent);
+            background: rgba(124, 58, 237, 0.2);
+            box-shadow: 0 0 15px rgba(124, 58, 237, 0.3);
+        }
+
+        .weapon-select-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: var(--accent);
+        }
+
+        .weapon-select-name {
+            font-family: 'Teko', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--primary);
+            flex: 1;
+        }
+
+        .weapon-select-tier {
+            font-family: 'Teko', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            padding: 0.25rem 0.75rem;
+            background: var(--darker);
+            border: 2px solid;
+        }
+
+        /* Loot Focus Styles */
+        .loot-focus-section {
+            background: var(--gray);
+            border: 2px solid rgba(245, 158, 11, 0.3);
+            border-left: 4px solid var(--warning);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .loot-focus-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .loot-focus-title {
+            font-family: 'Teko', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--warning);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            text-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+        }
+
+        .add-loot-form {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .loot-input {
+            padding: 0.75rem 1rem;
+            background: var(--dark);
+            border: 2px solid rgba(245, 158, 11, 0.3);
+            color: #fff;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1rem;
+            min-width: 300px;
+            transition: all 0.3s ease;
+        }
+
+        .loot-input:focus {
+            outline: none;
+            border-color: var(--warning);
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.2);
+        }
+
+        .loot-input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .loot-quantity {
+            padding: 0.75rem 1rem;
+            background: var(--dark);
+            border: 2px solid rgba(245, 158, 11, 0.3);
+            color: #fff;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1rem;
+            width: 100px;
+            transition: all 0.3s ease;
+        }
+
+        .loot-quantity:focus {
+            outline: none;
+            border-color: var(--warning);
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.2);
+        }
+
+        .add-loot-btn {
+            padding: 0.75rem 1.5rem;
+            background: var(--warning);
+            border: none;
+            color: var(--dark);
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .add-loot-btn:hover {
+            background: #d97706;
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.4);
+        }
+
+        .clear-list-btn {
+            padding: 0.75rem 1.5rem;
+            background: var(--dark);
+            border: 2px solid var(--damage);
+            color: var(--damage);
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .clear-list-btn:hover {
+            background: var(--damage);
+            color: #fff;
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+        }
+
+        .loot-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            max-width: 700px;
+        }
+
+        .loot-item {
+            background: rgba(245, 158, 11, 0.1);
+            border: 2px solid rgba(245, 158, 11, 0.3);
+            padding: 0.75rem 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1.5rem;
+            transition: all 0.3s ease;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .loot-item:hover {
+            border-color: var(--warning);
+            background: rgba(245, 158, 11, 0.15);
+        }
+
+        .loot-item-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .loot-item-name {
+            font-family: 'Teko', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--warning);
+            text-transform: uppercase;
+            line-height: 1.2;
+            margin-bottom: 0.25rem;
+        }
+
+        .loot-target-line {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .loot-item-quantity {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 0.15rem;
+            display: none;
+        }
+
+        .loot-item-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-shrink: 0;
+        }
+
+        .quantity-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 0.3rem 0.5rem;
+            border-radius: 4px;
+        }
+
+        .quantity-btn {
+            width: 28px;
+            height: 28px;
+            background: rgba(245, 158, 11, 0.2);
+            border: 1px solid var(--warning);
+            color: var(--warning);
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .quantity-btn:hover {
+            background: var(--warning);
+            color: var(--dark);
+        }
+
+        .quantity-display {
+            min-width: 35px;
+            text-align: center;
+            font-family: 'Teko', sans-serif;
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--warning);
+        }
+
+        .remove-loot-btn {
+            width: 28px;
+            height: 28px;
+            background: transparent;
+            border: 2px solid var(--damage);
+            color: var(--damage);
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .remove-loot-btn:hover {
+            background: var(--damage);
+            color: #fff;
+            transform: rotate(90deg);
+        }
+
+        .loot-empty {
+            text-align: center;
+            padding: 3rem 2rem;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 1.1rem;
+        }
+
+        .loot-empty::before {
+            content: '📦';
+            display: block;
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.3;
+        }
+
+        /* Notification Toast */
+        .notification-toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--gray);
+            border: 2px solid var(--success);
+            padding: 1rem 1.5rem;
+            border-radius: 4px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            z-index: 10000;
+            animation: slideInRight 0.3s ease, fadeOut 0.3s ease 2.7s;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            min-width: 300px;
+        }
+
+        .notification-toast.error {
+            border-color: var(--damage);
+        }
+
+        .notification-toast.info {
+            border-color: var(--primary);
+        }
+
+        .notification-icon {
+            font-size: 1.5rem;
+        }
+
+        .notification-content {
+            flex: 1;
+        }
+
+        .notification-title {
+            font-weight: 700;
+            font-size: 0.95rem;
+            margin-bottom: 0.25rem;
+            color: var(--primary);
+        }
+
+        .notification-toast.error .notification-title {
+            color: var(--damage);
+        }
+
+        .notification-toast.success .notification-title {
+            color: var(--success);
+        }
+
+        .notification-message {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+                transform: translateX(400px);
+            }
+        }
+
+        /* Grenades Page Styles */
+        .grenades-intro {
+            background: var(--gray);
+            border: 1px solid rgba(0, 255, 242, 0.2);
+            border-left: 4px solid var(--primary);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .loot-focus-intro {
+            background: var(--gray);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            border-left: 4px solid var(--warning);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .section-title {
+            font-family: 'Teko', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 1rem;
+        }
+
+        .section-description {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+
+        .grenade-filter-bar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            background: var(--gray);
+            padding: 1.5rem;
+            padding-top: 2rem;
+            border: 1px solid rgba(255, 107, 53, 0.2);
+            border-left: 3px solid var(--secondary);
+            position: relative;
+        }
+
+        .grenade-controls {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            padding: 1rem;
+            background: rgba(0, 255, 242, 0.03);
+            border-bottom: 1px solid rgba(0, 255, 242, 0.1);
+        }
+
+        .grenade-filter-bar::before {
+            content: 'GRENADE FILTER';
+            position: absolute;
+            top: 0.5rem;
+            left: 1.5rem;
+            font-size: 0.75rem;
+            color: var(--secondary);
+            letter-spacing: 0.2em;
+            opacity: 0.7;
+        }
+
+        .grenade-filter-btn {
+            padding: 0.5rem 1.5rem;
+            background: transparent;
+            border: 2px solid rgba(255, 107, 53, 0.3);
+            color: var(--secondary);
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 600;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .grenade-filter-btn:hover {
+            background: rgba(255, 107, 53, 0.1);
+            border-color: var(--secondary);
+        }
+
+        .grenade-filter-btn.active {
+            background: var(--secondary);
+            color: var(--dark);
+            box-shadow: 0 0 15px rgba(255, 107, 53, 0.4);
+        }
+
+        .grenades-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .grenade-card {
+            background: var(--gray);
+            border: 1px solid rgba(255, 107, 53, 0.2);
+            border-left: 4px solid var(--secondary);
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .grenade-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(255, 107, 53, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .grenade-card:hover {
+            border-color: var(--secondary);
+            box-shadow: 0 0 25px rgba(255, 107, 53, 0.2);
+            transform: translateY(-3px);
+        }
+
+        .grenade-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .grenade-name {
+            font-family: 'Teko', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .grenade-category-badge {
+            padding: 0.25rem 0.75rem;
+            background: rgba(255, 107, 53, 0.2);
+            border: 1px solid var(--secondary);
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .grenade-description {
+            color: rgba(255, 255, 255, 0.85);
+            line-height: 1.6;
+            margin-bottom: 1rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .grenade-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+            margin-top: 1rem;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 107, 53, 0.1);
+            position: relative;
+            z-index: 1;
+        }
+
+        .grenade-stat {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .grenade-stat-label {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.6);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .grenade-stat-value {
+            font-family: 'Teko', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--secondary);
+        }
+
+        .grenade-uses {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: rgba(255, 107, 53, 0.05);
+            border: 1px solid rgba(255, 107, 53, 0.2);
+            position: relative;
+            z-index: 1;
+        }
+
+        .grenade-uses-title {
+            font-size: 0.75rem;
+            color: var(--secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+
+        .grenade-uses-text {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        /* Maps Page Styles */
+        .maps-intro {
+            background: var(--gray);
+            border: 1px solid rgba(124, 58, 237, 0.2);
+            border-left: 4px solid var(--accent);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .maps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
+            gap: 2rem;
+        }
+
+        .map-card {
+            background: var(--gray);
+            border: 1px solid rgba(124, 58, 237, 0.2);
+            border-left: 4px solid var(--accent);
+            padding: 2rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .map-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(124, 58, 237, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .map-card:hover {
+            border-color: var(--accent);
+            box-shadow: 0 0 30px rgba(124, 58, 237, 0.3);
+            transform: translateY(-5px);
+        }
+
+        .map-header {
+            position: relative;
+            z-index: 1;
+            margin-bottom: 1.5rem;
+        }
+
+        .map-name {
+            font-family: 'Teko', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+        }
+
+        .map-subtitle {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.6);
+            font-style: italic;
+            letter-spacing: 0.05em;
+        }
+
+        .map-description {
+            color: rgba(255, 255, 255, 0.85);
+            line-height: 1.7;
+            margin-bottom: 1.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .map-features {
+            position: relative;
+            z-index: 1;
+            margin-bottom: 1.5rem;
+        }
+
+        .map-feature-section {
+            margin-bottom: 1rem;
+        }
+
+        .map-feature-title {
+            font-size: 0.75rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .map-feature-title::before {
+            content: '▸';
+            color: var(--accent);
+        }
+
+        .map-feature-list {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.95rem;
+            line-height: 1.6;
+            padding-left: 1.5rem;
+        }
+
+        .extraction-points {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 0.5rem;
+            padding-left: 0;
+        }
+
+        .extraction-point {
+            background: rgba(0, 255, 242, 0.05);
+            border: 1px solid rgba(0, 255, 242, 0.2);
+            padding: 0.5rem 0.75rem;
+            font-size: 0.9rem;
+            color: var(--primary);
+            transition: all 0.3s ease;
+        }
+
+        .extraction-point:hover {
+            background: rgba(0, 255, 242, 0.1);
+            border-color: var(--primary);
+            transform: translateX(3px);
+        }
+
+        .map-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .map-tag {
+            padding: 0.4rem 0.9rem;
+            background: rgba(124, 58, 237, 0.2);
+            border: 1px solid var(--accent);
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .map-tag.pve {
+            background: rgba(16, 185, 129, 0.2);
+            border-color: var(--success);
+            color: var(--success);
+        }
+
+        .map-tag.pvp {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: var(--damage);
+            color: var(--damage);
+        }
+
+        .map-tag.farming {
+            background: rgba(251, 191, 36, 0.2);
+            border-color: #fbbf24;
+            color: #fbbf24;
+        }
+
+        @media (max-width: 768px) {
+            .hamburger-menu {
+                top: 1rem;
+                right: 1rem;
+                width: 36px;
+                height: 36px;
+            }
+
+            .hamburger-dropdown {
+                top: 60px;
+                right: 1rem;
+                left: 1rem;
+                min-width: auto;
+            }
+
+            .maps-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .grenades-grid {
+                grid-template-columns: 1fr;
+            }
+
+            /* Container and padding */
+            .container {
+                padding: 1rem;
+            }
+
+            /* Header */
+            h1 {
+                font-size: 2rem;
+            }
+
+            .subtitle {
+                font-size: 0.85rem;
+            }
+
+            /* Navigation tabs - stack vertically */
+            .main-nav {
+                flex-direction: row;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+
+            .nav-btn {
+                flex: 1 1 calc(50% - 0.25rem);
+                min-width: 120px;
+                padding: 0.75rem 1rem;
+                font-size: 1rem;
+            }
+
+            /* Search bar */
+            .search-container {
+                margin: 1rem 0;
+            }
+
+            .search-input {
+                width: 100%;
+                padding: 0.75rem 2.5rem 0.75rem 1rem;
+                font-size: 0.95rem;
+            }
+
+            /* Loot Focus Section */
+            .loot-focus-section {
+                padding: 1rem;
+            }
+
+            .loot-focus-header {
+                font-size: 1.5rem;
+            }
+
+            .loot-controls {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+
+            .loot-input {
+                width: 100%;
+                min-width: 100%;
+            }
+
+            .loot-quantity {
+                width: 100%;
+            }
+
+            .add-loot-btn {
+                width: 100%;
+                padding: 0.75rem;
+            }
+
+            .clear-list-btn {
+                width: 100%;
+                padding: 0.75rem;
+            }
+
+            /* Loot items grid */
+            .loot-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .loot-item {
+                padding: 0.75rem;
+                gap: 0.75rem;
+            }
+
+            .loot-item-info {
+                flex: 1;
+                min-width: 0;
+            }
+
+            .loot-item-name {
+                font-size: 1.1rem;
+            }
+
+            .loot-item-controls {
+                flex-shrink: 0;
+            }
+
+            .quantity-controls {
+                gap: 0.4rem;
+            }
+
+            .quantity-btn {
+                padding: 0.4rem 0.7rem;
+                font-size: 1rem;
+            }
+
+            .current-quantity {
+                min-width: 30px;
+                font-size: 1rem;
+            }
+
+            .remove-btn {
+                padding: 0.4rem 0.6rem;
+            }
+
+            /* Arsenal controls - stack vertically on mobile */
+            .arsenal-controls {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+
+            .arsenal-btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            /* Mode toggle - keep horizontal but smaller */
+            .mode-toggle {
+                padding: 0.75rem;
+                gap: 0.5rem;
+            }
+
+            .mode-btn {
+                flex: 1;
+                padding: 0.6rem 1rem;
+                font-size: 1rem;
+            }
+
+            /* Filter bar */
+            .filter-bar {
+                gap: 0.5rem;
+                justify-content: center;
+            }
+
+            .filter-btn {
+                padding: 0.5rem 0.75rem;
+                font-size: 0.85rem;
+            }
+
+            /* Grenade filters */
+            .grenade-filter-bar {
+                gap: 0.5rem;
+            }
+
+            .grenade-filter-btn {
+                padding: 0.5rem 0.9rem;
+                font-size: 0.85rem;
+            }
+
+            /* Ammo filter */
+            .ammo-filter-bar {
+                flex-direction: column;
+                gap: 0.75rem;
+                padding: 0.75rem;
+            }
+
+            .ammo-filter-label {
+                font-size: 1.1rem;
+            }
+
+            .ammo-filter-btn {
+                flex: 1;
+                padding: 0.5rem 1rem;
+                font-size: 0.85rem;
+            }
+
+            /* Quick presets */
+            .quick-presets {
+                flex-direction: column;
+                gap: 0.5rem;
+                padding: 0.75rem;
+            }
+
+            .preset-label {
+                font-size: 1rem;
+            }
+
+            .preset-btn {
+                width: 100%;
+                padding: 0.5rem 1rem;
+                font-size: 0.85rem;
+            }
+
+            /* Weapon meta */
+            .weapon-meta {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+                margin-bottom: 1rem;
+            }
+
+            .ammo-badge {
+                font-size: 0.7rem;
+                padding: 0.3rem 0.6rem;
+            }
+
+            /* Weapon cards */
+            .loadout-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .weapon-header {
+                gap: 0.5rem;
+            }
+
+            .weapon-name {
+                font-size: 1.75rem;
+            }
+
+            .favorite-btn {
+                font-size: 1.5rem !important;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            /* Grenade cards */
+            .grenade-name {
+                font-size: 1.4rem;
+            }
+
+            .grenade-stats {
+                grid-template-columns: 1fr;
+            }
+
+            /* Map cards */
+            .map-name {
+                font-size: 1.75rem;
+            }
+
+            /* Modal */
+            .modal-content {
+                width: 95%;
+                max-width: 95%;
+                margin: 1rem;
+                max-height: 85vh;
+            }
+
+            .weapons-selection-grid {
+                grid-template-columns: 1fr;
+            }
+
+            /* Touch-friendly buttons */
+            button {
+                min-height: 44px;
+            }
+
+            .quantity-btn,
+            .remove-btn {
+                min-width: 44px;
+                min-height: 44px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="scan-line"></div>
+    <div class="noise"></div>
+
+    <header>
+        <!-- Hamburger Menu Button -->
+        <button class="hamburger-menu" id="hamburgerBtn" title="Menu">
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+        </button>
+        
+        <h1>ARC RAIDERS</h1>
+        <div class="subtitle">Tactical Loadout Optimizer</div>
+        
+        <!-- Quick Stats Summary -->
+        <div class="quick-stats-summary">
+            <span class="stat-pill">📊 <span id="totalWeapons">21</span> Weapons</span>
+            <span class="stat-pill" title="Favorited weapons and throwables">⭐ <span id="totalFavorites">0</span> Favorites</span>
+            <span class="stat-pill">✓ <span id="totalOwned">0</span> Owned</span>
+            <span class="stat-pill">🎯 <span id="totalLootItems">0</span> Loot Items</span>
+        </div>
+        
+        <nav class="main-nav">
+            <button class="nav-btn active" data-page="loot">🎯 Loot Focus</button>
+            <button class="nav-btn" data-page="loadouts">🔫 Weapons</button>
+            <button class="nav-btn" data-page="grenades">💣 Grenades</button>
+            <button class="nav-btn" data-page="maps">🗺️ Maps</button>
+        </nav>
+        <div class="search-container">
+            <input type="text" id="globalSearch" class="search-input" placeholder="🔍 Search weapons, grenades, throwables...">
+            <button id="clearSearch" class="clear-search-btn" style="display: none;">✕</button>
+        </div>
+    </header>
+
+    <!-- Hamburger Menu Dropdown -->
+    <div class="hamburger-dropdown" id="hamburgerDropdown">
+        <div class="dropdown-header">Menu</div>
+        <button class="dropdown-item" id="exportDataBtnMenu">
+            <span class="dropdown-icon">💾</span>
+            <span class="dropdown-text">Export Data</span>
+        </button>
+        <button class="dropdown-item" id="importDataBtnMenu">
+            <span class="dropdown-icon">📥</span>
+            <span class="dropdown-text">Import Data</span>
+        </button>
+        <input type="file" id="importFileInputMenu" accept=".json" style="display: none;">
+    </div>
+
+    <!-- Auto-save Indicator -->
+    <div class="autosave-indicator" id="autosaveIndicator">
+        <span class="save-icon">💾</span>
+        <span class="save-text">Saved!</span>
+    </div>
+
+    <!-- Scroll to Top Button -->
+    <button class="scroll-to-top" id="scrollToTopBtn" title="Scroll to top">
+        ↑
+    </button>
+
+    <div class="container">
+        <!-- Loot Focus Page -->
+        <div class="page active" id="lootPage">
+            <div class="loot-focus-intro">
+                <h2 class="section-title">🎯 Loot Focus List</h2>
+                <p class="section-description">Track the items you need to find in your raids. Set target quantities and check them off as you collect them. Your loot list is automatically saved.</p>
+            </div>
+            
+            <div class="loot-focus-section">
+                <div class="loot-focus-header">
+                    <div class="add-loot-form">
+                        <input 
+                            type="text" 
+                            id="lootInput" 
+                            class="loot-input" 
+                            placeholder="Enter item name (e.g., Rare Mod, Energy Cell)"
+                        >
+                        <input 
+                            type="number" 
+                            id="lootQuantity" 
+                            class="loot-quantity" 
+                            placeholder="Qty"
+                            min="1"
+                            value="1"
+                        >
+                        <button id="addLootBtn" class="add-loot-btn">+ Add to List</button>
+                        <button id="clearLootListBtn" class="clear-list-btn">Clear List</button>
+                    </div>
+                </div>
+                <div id="lootList" class="loot-list"></div>
+            </div>
+        </div>
+        <!-- End Loot Focus Page -->
+
+        <!-- Loadouts Page -->
+        <div class="page" id="loadoutsPage">
+
+        <!-- Top Controls Bar -->
+        <div class="top-controls">
+            <div class="control-group">
+                <button id="manageArsenalBtn" class="control-btn">
+                    ⚙️ Manage Arsenal
+                    <span class="badge" id="ownedCount">0</span>
+                </button>
+                <button id="showOwnedBtn" class="control-btn" style="display: none;">
+                    ✓ My Weapons
+                </button>
+                <button id="showAllBtn" class="control-btn" style="display: none;">
+                    📋 Show All
+                </button>
+            </div>
+            
+            <div class="control-group">
+                <button id="showFavoritesBtn" class="control-btn favorite-filter-btn">
+                    ⭐ Favorites
+                    <span class="badge" id="favoritesCount">0</span>
+                </button>
+                <button id="showAllFromFavoritesBtn" class="control-btn" style="display: none;">
+                    📋 Show All
+                </button>
+            </div>
+            
+            <div class="control-group">
+                <label class="sort-label">SORT BY:</label>
+                <select id="sortSelect" class="sort-select">
+                    <option value="name">Name (A-Z)</option>
+                    <option value="damage">Damage ↓</option>
+                    <option value="fireRate">Fire Rate ↓</option>
+                    <option value="range">Range ↓</option>
+                    <option value="rarity">Rarity</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <button id="clearAllFiltersBtn" class="control-btn clear-all-btn">
+                    🔄 Clear All Filters
+                </button>
+            </div>
+        </div>
+
+        <!-- Filters Section -->
+        <div class="filters-wrapper">
+            <!-- Mode & Quick Filters Row -->
+            <div class="filters-row">
+                <div class="mode-toggle-compact">
+                    <button class="mode-btn active" data-mode="all">ALL</button>
+                    <button class="mode-btn" data-mode="pve">PVE</button>
+                    <button class="mode-btn" data-mode="pvp">PVP</button>
+                </div>
+                
+                <div class="quick-presets-compact">
+                    <button class="preset-btn" data-preset="meta">🔥 META</button>
+                    <button class="preset-btn" data-preset="highDamage">💥 DMG</button>
+                    <button class="preset-btn" data-preset="fastFire">⚡ FAST</button>
+                    <button class="preset-btn" data-preset="longRange">🎯 RANGE</button>
+                    <button class="preset-btn" data-preset="beginner">🌟 EASY</button>
+                </div>
+            </div>
+
+            <!-- Weapon Type Filters -->
+            <div class="filter-bar">
+                <button class="filter-btn active" data-filter="all">ALL WEAPONS</button>
+                <button class="filter-btn" data-filter="assault">ASSAULT RIFLES</button>
+                <button class="filter-btn" data-filter="battle">BATTLE RIFLES</button>
+                <button class="filter-btn" data-filter="smg">SMG</button>
+                <button class="filter-btn" data-filter="shotgun">SHOTGUNS</button>
+                <button class="filter-btn" data-filter="sniper">SNIPERS</button>
+                <button class="filter-btn" data-filter="hand">HAND CANNONS</button>
+                <button class="filter-btn" data-filter="lmg">LMG</button>
+                <button class="filter-btn" data-filter="pistol">PISTOLS</button>
+                <button class="filter-btn" data-filter="launcher">LAUNCHERS</button>
+                <button class="filter-btn" data-filter="special">SPECIAL</button>
+            </div>
+
+            <!-- Ammo Type Filters -->
+            <div class="ammo-filter-bar-compact">
+                <button class="ammo-filter-btn active" data-ammo="all">ALL AMMO</button>
+                <button class="ammo-filter-btn" data-ammo="Light">🟢 LIGHT</button>
+                <button class="ammo-filter-btn" data-ammo="Medium">🟡 MEDIUM</button>
+                <button class="ammo-filter-btn" data-ammo="Heavy">🔴 HEAVY</button>
+                <button class="ammo-filter-btn" data-ammo="Special">🟣 SPECIAL</button>
+            </div>
+        </div>
+
+        <!-- Loadout Grid -->
+        <div id="loadoutGrid" class="loadout-grid"></div>
+        </div>
+        <!-- End Loadouts Page -->
+
+        <!-- Grenades Page -->
+        <div class="page" id="grenadesPage">
+            <div class="grenades-intro">
+                <h2 class="section-title">💣 Grenades & Throwables</h2>
+                <p class="section-description">Complete guide to all throwable items in ARC Raiders. Use grenades strategically to control space, deal damage, and survive encounters.</p>
+            </div>
+
+            <!-- Grenade Controls -->
+            <div class="grenade-controls">
+                <button id="showFavoriteGrenadesBtn" class="control-btn favorite-filter-btn">
+                    ⭐ Show Favorites
+                    <span class="badge" id="favoriteGrenadesCount">0</span>
+                </button>
+                <button id="showAllGrenadesBtn" class="control-btn" style="display: none;">
+                    📋 Show All
+                </button>
+                
+                <div class="control-group">
+                    <label class="sort-label">SORT BY:</label>
+                    <select id="grenadeSortSelect" class="sort-select">
+                        <option value="name">Name (A-Z)</option>
+                        <option value="damage">Damage ↓</option>
+                        <option value="radius">Radius ↓</option>
+                        <option value="category">Category</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Grenade Categories -->
+            <div class="grenade-filter-bar">
+                <button class="grenade-filter-btn active" data-category="all">All Grenades</button>
+                <button class="grenade-filter-btn" data-category="damage">Damage</button>
+                <button class="grenade-filter-btn" data-category="utility">Utility</button>
+                <button class="grenade-filter-btn" data-category="special">Special</button>
+                <button class="grenade-filter-btn" data-category="arc-parts">ARC Parts</button>
+                <button class="grenade-filter-btn" data-category="crafting">Crafting</button>
+            </div>
+
+            <div id="grenadesGrid" class="grenades-grid"></div>
+        </div>
+        <!-- End Grenades Page -->
+
+        <!-- Maps Page -->
+        <div class="page" id="mapsPage">
+            <div class="maps-intro">
+                <h2 class="section-title">🗺️ Battleground Intel</h2>
+                <p class="section-description">Complete guide to all ARC Raiders maps. Learn high-value loot locations, boss spawns, extraction points, and tactical advantages for each battleground.</p>
+            </div>
+
+            <div id="mapsGrid" class="maps-grid"></div>
+        </div>
+        <!-- End Maps Page -->
+    </div>
+
+    <!-- Arsenal Management Modal -->
+    <div id="arsenalModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Arsenal Management</div>
+                <div class="modal-subtitle">Select the weapons you currently own</div>
+                <button class="close-modal" id="closeModal">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="quick-actions">
+                    <button class="quick-action-btn" id="selectAllWeapons">Select All</button>
+                    <button class="quick-action-btn" id="deselectAllWeapons">Deselect All</button>
+                    <button class="quick-action-btn" id="selectTierS">Select Epic/Legendary</button>
+                    <button class="quick-action-btn" id="selectCommon">Select Common Weapons</button>
+                </div>
+                <div id="weaponsSelectionGrid" class="weapon-selection-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Loadout data
+        const loadouts = [
+            // Assault Rifles
+            {
+                weapon: "KETTLE",
+                type: "Assault Rifle",
+                category: "assault",
+                rarity: "Common",
+                damage: 10,
+                fireRate: 28,
+                magazine: 30,
+                range: "42.8m",
+                ammoType: "Light",
+                firingMode: "Semi-Automatic",
+                secondary: "HAIRPIN or BURLETTA",
+                throwables: ["Light Impact Grenade", "Smoke Grenade"],
+                bestFor: "Precise semi-automatic combat with excellent range and accuracy",
+                pve: "Great for conserving ammo with accurate shots. High range makes it effective at distance.",
+                pvp: "Strong precision weapon. Rewards accurate shooting and trigger discipline.",
+                pros: ["Excellent range", "Light ammo (common)", "Very accurate", "Beginner friendly"],
+                cons: ["Semi-auto only", "Lower DPS", "Needs good aim"]
+            },
+            {
+                weapon: "RATTLER",
+                type: "Assault Rifle",
+                category: "assault",
+                rarity: "Common",
+                damage: 9,
+                fireRate: 33.3,
+                magazine: 30,
+                range: "56.2m",
+                ammoType: "Medium",
+                firingMode: "Fully-Automatic",
+                secondary: "BURLETTA",
+                throwables: ["Heavy Fuze Grenade", "Lure Grenade"],
+                bestFor: "Versatile full-auto combat with good range and fire rate",
+                pve: "Excellent all-rounder. Balanced stats make it reliable for most encounters.",
+                pvp: "Solid for PvP. Medium ammo gives it an edge against ARCs too.",
+                pros: ["Full-auto", "Great range", "High fire rate", "Balanced stats"],
+                cons: ["Lower damage", "Medium ammo", "Common rarity"]
+            },
+            {
+                weapon: "ARPEGGIO",
+                type: "Assault Rifle",
+                category: "assault",
+                rarity: "Uncommon",
+                damage: 9.5,
+                fireRate: 18.3,
+                magazine: 30,
+                range: "55.9m",
+                ammoType: "Medium",
+                firingMode: "3-Round Burst",
+                secondary: "BURLETTA",
+                throwables: ["Shrapnel Grenade", "Smoke Grenade"],
+                bestFor: "Burst fire precision for controlled engagements",
+                pve: "Decent for PvE if you can manage the burst fire. Requires good aim.",
+                pvp: "Melts enemies with attachments. Very versatile burst rifle.",
+                pros: ["Burst fire control", "Good damage", "Decent range", "Uncommon rarity"],
+                cons: ["Requires aim", "Burst only", "Medium ammo", "Lower fire rate"]
+            },
+            {
+                weapon: "TEMPEST",
+                type: "Assault Rifle",
+                category: "assault",
+                rarity: "Epic",
+                damage: 10,
+                fireRate: 36.7,
+                magazine: 30,
+                range: "55.9m",
+                ammoType: "Medium",
+                firingMode: "Fully-Automatic",
+                secondary: "BURLETTA or VENATOR",
+                throwables: ["Trigger 'Nade", "Smoke Grenade"],
+                bestFor: "High DPS automatic assault rifle for aggressive play",
+                pve: "Excellent for aggressive PvE. High fire rate helps with crowd control.",
+                pvp: "Meta weapon for PvP. High DPS and good range make it deadly.",
+                pros: ["High fire rate", "Great range", "Full-auto", "Meta weapon"],
+                cons: ["Epic rarity (rare)", "Medium ammo", "Recoil management"]
+            },
+            {
+                weapon: "BETTINA",
+                type: "Assault Rifle",
+                category: "assault",
+                rarity: "Epic",
+                damage: 14,
+                fireRate: 32,
+                magazine: 30,
+                range: "51.3m",
+                ammoType: "Heavy",
+                firingMode: "Fully-Automatic",
+                secondary: "ANVIL",
+                throwables: ["Wolfpack", "Heavy Fuze Grenade"],
+                bestFor: "Heavy-hitting automatic rifle with superior damage",
+                pve: "Great for PvE with high damage per shot. Strong armor penetration.",
+                pvp: "Strong in PvP but ammo cost is significant. High damage output.",
+                pros: ["Longest AR range", "High precision", "Good damage", "Epic rarity"],
+                cons: ["Slowest fire rate", "Full-auto recoil", "Heavy ammo", "Hard to control"]
+            },
+            
+            // Battle Rifles
+            {
+                weapon: "FERRO",
+                type: "Battle Rifle",
+                category: "battle",
+                rarity: "Common",
+                damage: 40,
+                fireRate: 6.6,
+                magazine: 2,
+                range: "53.1m",
+                ammoType: "Heavy",
+                firingMode: "Break-Action",
+                secondary: "BURLETTA or VENATOR",
+                throwables: ["Heavy Fuze Grenade", "Lure Grenade"],
+                bestFor: "Devastating single-shot eliminations with massive damage",
+                pve: "One-shot kill potential on most enemies. Best budget ARC killer.",
+                pvp: "Can one-shot players. Requires precision but extremely rewarding.",
+                pros: ["Highest BR damage", "Amazing range", "One-shot potential", "Common rarity"],
+                cons: ["Slow fire rate", "Heavy ammo (rare)", "2-shot magazine", "Break-action reload"]
+            },
+            {
+                weapon: "RENEGADE",
+                type: "Battle Rifle",
+                category: "battle",
+                rarity: "Rare",
+                damage: 35,
+                fireRate: 21,
+                magazine: 10,
+                range: "68.8m",
+                ammoType: "Medium",
+                firingMode: "Lever-Action",
+                secondary: "BURLETTA",
+                throwables: ["Snap Blast Grenade", "Smoke Grenade"],
+                bestFor: "High-damage lever-action precision at range",
+                pve: "Very effective for PvE. Good damage and range balance.",
+                pvp: "Strong PvP choice. High damage and excellent range."
+            },
+            {
+                weapon: "APHELION",
+                type: "Battle Rifle",
+                category: "battle",
+                rarity: "Legendary",
+                damage: 25,
+                fireRate: 9,
+                magazine: 20,
+                range: "76m",
+                ammoType: "Energy Clip",
+                firingMode: "2-Round Burst",
+                secondary: "VENATOR",
+                throwables: ["Showstopper", "Trigger 'Nade"],
+                bestFor: "Energy-powered burst rifle with excellent range",
+                pve: "Good for PvE. Energy ammo has unique economy. Cannot be upgraded.",
+                pvp: "Viable in PvP. Longest range in battle rifle category."
+            },
+            
+            // SMGs
+            {
+                weapon: "STITCHER",
+                type: "SMG",
+                category: "smg",
+                rarity: "Common",
+                damage: 7,
+                fireRate: 45.3,
+                magazine: 30,
+                range: "42.1m",
+                ammoType: "Light",
+                firingMode: "Fully-Automatic",
+                secondary: "N/A",
+                throwables: ["Light Impact Grenade", "Li'l Smoke Grenade"],
+                bestFor: "High fire rate SMG for close-quarters combat",
+                pve: "Excellent for PvE. High fire rate melts enemies at close range.",
+                pvp: "Best budget close-range PvP weapon. Competes with higher rarities."
+            },
+            {
+                weapon: "BOBCAT",
+                type: "SMG",
+                category: "smg",
+                rarity: "Rare",
+                damage: 6,
+                fireRate: 66.7,
+                magazine: 30,
+                range: "44m",
+                ammoType: "Light",
+                firingMode: "Fully-Automatic",
+                secondary: "N/A",
+                throwables: ["Shrapnel Grenade", "Li'l Smoke Grenade"],
+                bestFor: "Extreme fire rate for overwhelming close-range DPS",
+                pve: "Amazing DPS in PvE. Burns through ammo but shreds enemies.",
+                pvp: "Dominant in close quarters. Highest fire rate in class."
+            },
+            
+            // Shotguns
+            {
+                weapon: "IL TORO",
+                type: "Shotgun",
+                category: "shotgun",
+                rarity: "Rare",
+                damage: 67.5,
+                fireRate: 14.3,
+                magazine: 8,
+                range: "20m",
+                ammoType: "Shotgun",
+                firingMode: "Pump-Action",
+                secondary: "BURLETTA or VENATOR",
+                throwables: ["Heavy Fuze Grenade", "Gas Grenade"],
+                bestFor: "High burst damage pump-action shotgun",
+                pve: "Situational in PvE. High damage but limited by range and fire rate.",
+                pvp: "Can one-shot at very close range. High risk, high reward."
+            },
+            {
+                weapon: "VULCANO",
+                type: "Shotgun",
+                category: "shotgun",
+                rarity: "Epic",
+                damage: 49.5,
+                fireRate: 26.3,
+                magazine: 8,
+                range: "26m",
+                ammoType: "Shotgun",
+                firingMode: "Semi-Automatic",
+                secondary: "BURLETTA or VENATOR",
+                throwables: ["Blaze Grenade", "Smoke Grenade"],
+                bestFor: "Fast-firing semi-auto shotgun dominance",
+                pve: "Better than Il Toro for PvE. Higher fire rate and range.",
+                pvp: "Monster at close range. Melts people with semi-auto fire."
+            },
+            
+            // Pistols
+            {
+                weapon: "HAIRPIN",
+                type: "Pistol",
+                category: "pistol",
+                rarity: "Common",
+                damage: 20,
+                fireRate: 9,
+                magazine: 12,
+                range: "38.6m",
+                ammoType: "Light",
+                firingMode: "Slide-Action",
+                secondary: "N/A",
+                throwables: ["Light Impact Grenade"],
+                bestFor: "Basic sidearm for emergency situations",
+                pve: "Starter sidearm. Replace when possible.",
+                pvp: "Not ideal for PvP. Upgrade as soon as you can."
+            },
+            {
+                weapon: "BURLETTA",
+                type: "Pistol",
+                category: "pistol",
+                rarity: "Uncommon",
+                damage: 10,
+                fireRate: 28,
+                magazine: 12,
+                range: "41.7m",
+                ammoType: "Light",
+                firingMode: "Semi-Automatic",
+                secondary: "N/A",
+                throwables: ["Light Impact Grenade", "Li'l Smoke Grenade"],
+                bestFor: "Reliable semi-auto sidearm with good fire rate",
+                pve: "Solid sidearm for PvE. Good balance of stats.",
+                pvp: "Decent sidearm in PvP. Lightweight and effective.",
+                pros: ["Reliable pistol", "Light ammo", "Good fire rate", "Common & easy"],
+                cons: ["Still a pistol", "Limited damage", "Short range", "Backup only"]
+            },
+            {
+                weapon: "VENATOR",
+                type: "Pistol",
+                category: "pistol",
+                rarity: "Rare",
+                damage: 18,
+                fireRate: 36.7,
+                magazine: 12,
+                range: "48.4m",
+                ammoType: "Medium",
+                firingMode: "Semi-Automatic",
+                secondary: "N/A",
+                throwables: ["Shrapnel Grenade", "Tagging Grenade"],
+                bestFor: "High-damage sidearm that rivals primary weapons",
+                pve: "Excellent sidearm for PvE. Can serve as primary in a pinch.",
+                pvp: "Best sidearm in PvP. High damage and fire rate.",
+                pros: ["Best pistol", "High damage", "Great fire rate", "Good range"],
+                cons: ["Still pistol limits", "Medium ammo", "Rare rarity", "Not primary viable"]
+            },
+            
+            // Hand Cannons
+            {
+                weapon: "ANVIL",
+                type: "Hand Cannon",
+                category: "hand",
+                rarity: "Uncommon",
+                damage: 40,
+                fireRate: 16.3,
+                magazine: 6,
+                range: "50.2m",
+                ammoType: "Heavy",
+                firingMode: "Single-Action",
+                secondary: "N/A",
+                throwables: ["Heavy Fuze Grenade", "Smoke Grenade"],
+                bestFor: "Devastating hand cannon with massive per-shot damage",
+                pve: "Incredible damage in PvE. Can down most enemies in few shots.",
+                pvp: "Extremely powerful. Functions like a primary weapon as a sidearm.",
+                pros: ["Massive damage", "Hand cannon power", "Great range", "Uncommon"],
+                cons: ["Only 6 shots", "Heavy ammo", "Slow fire rate", "Needs precision"]
+            },
+            
+            // LMGs
+            {
+                weapon: "TORRENTE",
+                type: "LMG",
+                category: "lmg",
+                rarity: "Rare",
+                damage: 8,
+                fireRate: 58.3,
+                magazine: 100,
+                range: "49.9m",
+                ammoType: "Medium",
+                firingMode: "Fully-Automatic",
+                secondary: "BURLETTA",
+                throwables: ["Wolfpack", "Lure Grenade"],
+                bestFor: "Sustained suppressive fire with massive magazine",
+                pve: "Great for PvE. Massive magazine allows sustained fire.",
+                pvp: "Usable in PvP but mobility penalty is noticeable."
+            },
+            
+            // Sniper Rifles
+            {
+                weapon: "OSPREY",
+                type: "Sniper Rifle",
+                category: "sniper",
+                rarity: "Rare",
+                damage: 45,
+                fireRate: 17.7,
+                magazine: 5,
+                range: "80.3m",
+                ammoType: "Medium",
+                firingMode: "Bolt-Action",
+                secondary: "BURLETTA or VENATOR",
+                throwables: ["Trigger 'Nade", "Tagging Grenade"],
+                bestFor: "Long-range bolt-action precision",
+                pve: "Excellent for PvE sniping. Good damage and range.",
+                pvp: "Very strong in PvP. Can secure kills at extreme range."
+            },
+            {
+                weapon: "JUPITER",
+                type: "Sniper Rifle",
+                category: "sniper",
+                rarity: "Epic",
+                damage: 55,
+                fireRate: 7.7,
+                magazine: 5,
+                range: "71.7m",
+                ammoType: "Energy Clip",
+                firingMode: "Bolt-Action",
+                secondary: "VENATOR",
+                throwables: ["Showstopper", "Smoke Grenade"],
+                bestFor: "Highest damage sniper with energy ammo",
+                pve: "Massive damage in PvE. Energy ammo economy differs from standard.",
+                pvp: "Can one-shot headshot. Requires precision."
+            },
+            
+            // Launchers
+            {
+                weapon: "HULLCRACKER",
+                type: "Launcher",
+                category: "launcher",
+                rarity: "Epic",
+                damage: 100,
+                fireRate: 20.3,
+                magazine: 4,
+                range: "38.9m",
+                ammoType: "Launcher Ammo",
+                firingMode: "Pump-Action",
+                secondary: "BURLETTA or ANVIL",
+                throwables: ["Wolfpack", "Lure Grenade"],
+                bestFor: "Explosive launcher for heavy ARC units",
+                pve: "Specialized for taking down heavy ARCs. Very high damage.",
+                pvp: "Doesn't damage raiders. Only effective against ARCs."
+            },
+            
+            // Special
+            {
+                weapon: "EQUALIZER",
+                type: "Special",
+                category: "special",
+                rarity: "Legendary",
+                damage: 8,
+                fireRate: 33.3,
+                magazine: 60,
+                range: "68.6m",
+                ammoType: "Special",
+                firingMode: "Fully-Automatic",
+                secondary: "VENATOR",
+                throwables: ["Showstopper", "Trigger 'Nade"],
+                bestFor: "Energy-based automatic weapon with unique mechanics",
+                pve: "Interesting option for PvE. Energy weapons have unique feel.",
+                pvp: "Viable in PvP. Different playstyle from conventional weapons."
+            }
+        ];
+
+        // Grenades data
+        const grenades = [
+            {
+                name: "Light Impact Grenade",
+                category: "damage",
+                damage: "30",
+                radius: "2.5m",
+                detonation: "Impact",
+                description: "A grenade that detonates on impact, dealing explosive damage in a small radius.",
+                bestUse: "Spam-throw at enemies to flush them from cover. Cheap and effective for low-budget raids. Perfect for breaking shields and forcing enemy movement.",
+                pros: ["Instant detonation", "Cheap & common", "Good for spam", "No delay risk"],
+                cons: ["Low damage", "Small radius", "Requires accuracy", "Weak vs armor"]
+            },
+            {
+                name: "Heavy Fuze Grenade",
+                category: "damage",
+                damage: "80",
+                radius: "6m",
+                detonation: "Delayed",
+                description: "A grenade that detonates after a delay, dealing explosive damage in its radius.",
+                bestUse: "High damage for PvE and area denial in PvP. Best thrown into enclosed spaces or at stationary targets. Delay gives enemies time to escape.",
+                pros: ["High damage", "Large radius", "Area denial", "Great for PvE"],
+                cons: ["Delayed fuse", "Enemies can escape", "Predictable", "Self-damage risk"]
+            },
+            {
+                name: "Trigger 'Nade",
+                category: "damage",
+                damage: "90",
+                radius: "7.5m",
+                detonation: "Remote",
+                description: "A remote-detonated grenade that can stick to surfaces and ARC, dealing explosive damage when triggered.",
+                bestUse: "S-Tier trap tool. Stick multiple to extraction points, choke points, or Bastions. Detonate manually for devastating ambushes.",
+                pros: ["Remote detonation", "Sticky trap", "Highest damage", "Largest radius"],
+                cons: ["Requires setup", "Manual trigger", "Limited carry", "Rare/expensive"]
+            },
+            {
+                name: "Snap Blast Grenade",
+                category: "damage",
+                damage: "70",
+                radius: "4m",
+                detonation: "Short Delay",
+                description: "A grenade that sticks to surfaces, dealing explosive damage after a short delay.",
+                bestUse: "Sticky bomb for PvP. Attach to doorways, enemies, or heavy ARC units for consistent damage. Hard to dodge once stuck.",
+                pros: ["Sticky attachment", "Good damage", "Short delay", "Hard to dodge"],
+                cons: ["Smaller radius", "Delay still exists", "Requires accuracy", "Medium cost"]
+            },
+            {
+                name: "Shrapnel Grenade",
+                category: "damage",
+                damage: "60",
+                radius: "5m",
+                detonation: "Delayed",
+                description: "A makeshift fuze grenade that bursts into razor-sharp fragments upon detonation.",
+                bestUse: "Budget damage option. Bursts into fragments for zone control. Strong in PvP for clearing unarmored enemies or finishing low-health players.",
+                pros: ["Budget friendly", "Fragment spread", "Good radius", "Zone control"],
+                cons: ["Delayed fuse", "Lower damage", "Weak vs armor", "Common tier"]
+            },
+            {
+                name: "Blaze Grenade",
+                category: "damage",
+                damage: "5/sec for 10s",
+                radius: "10m",
+                detonation: "Impact",
+                description: "A grenade that detonates on impact, covering an area in fire that deals damage over time.",
+                bestUse: "Area denial and shield stripping. Creates burning zones in hallways to stop pushes. Effective against Leapers and shielded ARCs.",
+                pros: ["Huge radius", "DoT damage", "Area denial", "Shield strip"],
+                cons: ["Low DPS", "Avoidable", "Self-damage", "Slow total damage"]
+            },
+            {
+                name: "Trailblazer",
+                category: "damage",
+                damage: "20 per explosion",
+                radius: "Trail",
+                detonation: "Chain Reaction",
+                description: "A grenade that emits a trail of flammable gas along its path, causing an explosive chain reaction when it ignites.",
+                bestUse: "Creates fire walls in narrow corridors. Full trail can strip shields and deal massive damage if enemy can't escape sideways."
+            },
+            {
+                name: "Wolfpack",
+                category: "special",
+                damage: "166x12 bursts",
+                radius: "Homing",
+                detonation: "Scatter + Lock",
+                description: "A grenade that scatter into multiple homing missiles, each one targeting ARC and dealing explosive damage on impact.",
+                bestUse: "Best pure PvE damage tool. Swarm of rockets targets flying ARCs (Hornets, Rocketeers). Excellent for air control and multi-target damage."
+            },
+            {
+                name: "Seeker Grenade",
+                category: "special",
+                damage: "50",
+                radius: "Single Target",
+                detonation: "Homing",
+                description: "A homing grenade that targets a single nearby ARC dealing explosive damage on impact.",
+                bestUse: "Wolfpack Lite. Cheaper option for taking out single flying enemies like Hornets and Wasps without wasting ammo."
+            },
+            {
+                name: "Showstopper",
+                category: "special",
+                damage: "0 (Stun)",
+                radius: "6m",
+                detonation: "Impact EMP",
+                description: "A grenade that detonates after a delay, stunning enemies within its radius.",
+                bestUse: "Impact EMP stuns players for 2 seconds, ARCs for 10 seconds. Can pull Rocketeers from sky by hitting turbines. Meta for Stella Montis."
+            },
+            {
+                name: "Smoke Grenade",
+                category: "utility",
+                damage: "0",
+                radius: "7.5m",
+                detonation: "Impact",
+                description: "A grenade that creates a lingering smoke cloud on impact, blocking visibility from other Raiders.",
+                bestUse: "S-Tier survival tool. 20-second smoke cloud for extraction cover, reviving teammates, or escaping sniper fire. Denies enemy line of sight.",
+                pros: ["20-second duration", "Large radius", "Instant deploy", "S-tier utility"],
+                cons: ["No damage", "Blocks your vision too", "Limited carry", "Expensive"]
+            },
+            {
+                name: "Li'l Smoke Grenade",
+                category: "utility",
+                damage: "0",
+                radius: "3m",
+                detonation: "Impact",
+                description: "A Grenade that pops into a thick but small smoke cloud on impact, blocking visibility from ARC and other Raiders.",
+                bestUse: "Cheaper, shorter smoke (6 seconds). Perfect for quick escapes or close-range ambushes. Low cost allows spamming.",
+                pros: ["Cheap & spammable", "Instant deploy", "Quick escape", "Low cost"],
+                cons: ["Only 6 seconds", "Small radius", "No damage", "Blocks your vision"]
+            },
+            {
+                name: "Lure Grenade",
+                category: "utility",
+                damage: "0",
+                radius: "50m",
+                detonation: "Noise",
+                description: "A noisy device that sticks to surfaces distracting nearby ARC machines and drawing their fire.",
+                bestUse: "Redirects ARC aggro for 15 seconds. Clutch for extractions or pulling Shredders/Rocketeers away. Can stick to walls or enemies.",
+                pros: ["Huge range", "15-sec distract", "Sticky", "Great for extraction"],
+                cons: ["No damage", "PvE only", "Doesn't work on players", "Situational"]
+            },
+            {
+                name: "Tagging Grenade",
+                category: "utility",
+                damage: "0",
+                radius: "5m",
+                detonation: "Delayed",
+                description: "A grenade that detonates after a delay, tagging Raiders and ARC enemies in an area, allowing you to briefly track their location.",
+                bestUse: "Wall-hack grenade. Tags enemies for 10-30 seconds. Great for rooting out campers or tracking through smoke. Pairs with Smoke Grenades.",
+                pros: ["Wallhack effect", "10-30 sec duration", "Anti-camper", "Intel tool"],
+                cons: ["No damage", "Delayed fuse", "Requires awareness", "Limited range"]
+            },
+            {
+                name: "Gas Grenade",
+                category: "utility",
+                damage: "Stamina Drain",
+                radius: "6m",
+                detonation: "Impact",
+                description: "A grenade that creates a lingering toxic cloud on impact, draining the stamina of any Raiders within its area of effect.",
+                bestUse: "20-second stamina drain slows raiders. Prevents dodges and rolls in tight rooms. Pair with gunfire to capitalize on immobility."
+            },
+            {
+                name: "Light Stick",
+                category: "utility",
+                damage: "0",
+                radius: "Light",
+                detonation: "Impact",
+                description: "A throwable chemical light that illuminates the area around it.",
+                bestUse: "Illuminates dark areas on night maps. Mostly useless unless playing with zero gamma. Some use for signaling teammates."
+            },
+            {
+                name: "Wasp Driver",
+                category: "arc-parts",
+                damage: "Varies",
+                radius: "Small",
+                detonation: "Must Be Shot",
+                description: "Scavenged ARC part that can be thrown and shot to explode. Can be recycled into ARC Alloy.",
+                bestUse: "Makeshift explosive. Must shoot it to detonate. Better recycled for ARC Alloy unless desperate for damage."
+            },
+            {
+                name: "Hornet Driver",
+                category: "arc-parts",
+                damage: "Varies",
+                radius: "Medium",
+                detonation: "Impact",
+                description: "Scavenged ARC part that explodes on impact. Can be recycled into ARC Alloy.",
+                bestUse: "Better than Wasp Driver - explodes on impact. Still better recycled for ARC Alloy in most cases."
+            },
+            {
+                name: "Snitch Scanner",
+                category: "arc-parts",
+                damage: "Varies",
+                radius: "Small",
+                detonation: "Impact",
+                description: "Scavenged ARC part that can be thrown as an explosive. Can be recycled into ARC Alloy.",
+                bestUse: "Emergency throwable. Recycle for ARC Alloy instead unless you need immediate damage."
+            },
+            {
+                name: "Leaper Pulse Unit",
+                category: "arc-parts",
+                damage: "Varies",
+                radius: "Medium",
+                detonation: "Impact",
+                description: "Scavenged ARC part. Can be recycled into crafting materials.",
+                bestUse: "Stop recycling these! They're terrible as throwables. Always recycle for crafting materials."
+            },
+            {
+                name: "Fireball Burner",
+                category: "arc-parts",
+                damage: "Varies",
+                radius: "Small",
+                detonation: "Impact",
+                description: "Scavenged ARC part that can be thrown. Can be recycled into ARC Alloy.",
+                bestUse: "Minimal damage. Always recycle for ARC Alloy - much more valuable as crafting material."
+            },
+            {
+                name: "Crude Explosives",
+                category: "crafting",
+                damage: "Varies",
+                radius: "Medium",
+                detonation: "Impact",
+                description: "Used to craft explosives. Can be recycled into crafting materials.",
+                bestUse: "Crafting material, not a combat throwable. Save for crafting better grenades."
+            },
+            {
+                name: "Synthesized Fuel",
+                category: "crafting",
+                damage: "High",
+                radius: "Large",
+                detonation: "Must Be Shot",
+                description: "Used to craft utility items and explosives. Can be recycled into chemicals.",
+                bestUse: "Better as trap than grenade - place and shoot for big damage. More valuable for crafting though."
+            },
+            {
+                name: "Rubber Duck",
+                category: "special",
+                damage: "0",
+                radius: "Friendship",
+                detonation: "Never",
+                description: "Always there to lend an ear, should you need it.",
+                bestUse: "Emotional support. Keep one in your inventory for morale. Does not explode (tested extensively)."
+            }
+        ];
+
+        // Maps data
+        const maps = [
+            {
+                name: "Dam Battlegrounds",
+                subtitle: "Alcantara Power Plant",
+                description: "Once a crucial Raider stronghold during the closing battles of the First Wave. These toxic, waterlogged lands remain a hotspot for ARC skirmishes. Vast swamp and lakeside area with industrial structures and flooded zones.",
+                bestFor: ["PvE Combat", "Safe Farming", "Learning the Game"],
+                highValueLoot: ["Power Plant - Epic recyclables", "Central Dam Structure", "Waterfront Warehouses", "Industrial Complexes"],
+                arcSpawns: "Moderate ARC presence. Good for farming ARC Powercells and Alloy without excessive danger.",
+                extraction: "Multiple extraction points around the perimeter. Generally safe extractions with good visibility.",
+                extractionPoints: ["North Hatch (near power plant)", "East Elevator (waterfront)", "South Bridge Exit", "West Tunnel Access", "Central Dam Hatch"],
+                tips: "Best map for new players. Lower PvP pressure. Great for farming ARC components safely. Watch for toxic water areas.",
+                tags: ["pve", "farming"]
+            },
+            {
+                name: "Acerra Spaceport",
+                subtitle: "Where Exodus Shuttles Departed",
+                description: "A majestic testament to humanity's past ambitions. Where the Exodus shuttles once roared into the heavens, leaving Earth behind. Abandoned cosmodrome with launch towers, hangars, and scattered facilities.",
+                bestFor: ["Boss ARC Farming", "Weapon Blueprints", "XP Grinding"],
+                highValueLoot: ["Launch Towers (center) - High ARC concentration", "Departure Building (3 weapon crates)", "East Plains Warehouse", "Hidden Bunker Event"],
+                arcSpawns: "Very high boss ARC presence. Best for farming Queen Reactors and unique ARC drops. Harvester events common here.",
+                extraction: "Launch tower areas offer elevated extraction points. Be aware of sniper positions.",
+                extractionPoints: ["Launch Tower Elevator", "Departure Building Roof Hatch", "East Hangar Exit", "West Perimeter Hatch", "Hidden Bunker Emergency Exit", "Plains Zipline Terminus"],
+                tips: "Best for farming boss ARCs and XP. Departure Building has weapon crates (roof, 2nd floor breachable room, elevator shaft). Magnetic Accelerators at Rocket Assembly.",
+                tags: ["pve", "farming"]
+            },
+            {
+                name: "Buried City",
+                subtitle: "Remnant of the Old World",
+                description: "Amidst sand dunes in this arid wasteland, a completely buried city unlike the cold steel spires of the Exodus age. Walk these narrow streets and empty plazas, and know that people once lived here.",
+                bestFor: ["Balanced PvE/PvP", "Tempest Blueprint", "Resource Farming"],
+                highValueLoot: ["Unmarked buildings with drawers", "Central plaza areas", "Underground sections", "Night Raid mode highly rewarding"],
+                arcSpawns: "Moderate ARC presence. Focused more on exploration and PvP encounters than boss farming.",
+                extraction: "Multiple extraction points. Narrow streets can create chokepoints - plan escape routes carefully.",
+                extractionPoints: ["North Plaza Hatch", "Central Marketplace Tunnel", "East Residential Exit", "South Temple Stairs", "Underground Passage (West)", "Rooftop Zipline (High risk)"],
+                tips: "Night Raid mode recommended. Best chance for Tempest blueprint in drawers. Excellent for general resource farming. Watch for ambushes in narrow streets.",
+                tags: ["pvp", "farming"]
+            },
+            {
+                name: "The Blue Gate",
+                subtitle: "Gateway to Perilous Mountains",
+                description: "Once a steadfast symbol of defiant connection, now serves as a daunting entryway into perilous mountain ranges. The surrounding valley bears scars both new and old. Multi-level facility with mountain passages.",
+                bestFor: ["PvE Content", "Boss Farming", "Magnetic Accelerators"],
+                highValueLoot: ["Unmarked buildings (east/south areas)", "Exodus POIs", "Mountain facility sections", "Multi-level complex navigation"],
+                arcSpawns: "Good boss ARC spawns. Plenty of opportunities for farming unique components.",
+                extraction: "Mountain terrain provides tactical advantages. Use elevation for safe extractions.",
+                extractionPoints: ["Gate Control Tower", "Mountain Pass Elevator", "East Valley Hatch", "South Facility Exit", "North Ridge Zipline", "Emergency Tunnel (Lower level)"],
+                tips: "Tempest blueprint possible in eastern/southern drawers. Good for farming boss ARCs. Less PvP pressure than other maps. Complex vertical gameplay.",
+                tags: ["pve"]
+            },
+            {
+                name: "Stella Montis",
+                subtitle: "The Underground Facility",
+                description: "Carved deep into northern mountains, a vast abandoned facility well-preserved compared to the Rust Belt wreckage. Purely indoor map with underground tunnels and facilities. Cold, sterile, hinting at what humanity left behind.",
+                bestFor: ["PvP Combat", "Coin Farming", "Epic-Tier Loot"],
+                highValueLoot: ["Assembly Workshops (white/yellow stands) - Crazy Epic spawn rates", "Colored areas (2-3 Epic recyclables per run)", "Medical Research", "Any room drawers for blueprints"],
+                arcSpawns: "Moderate ARC presence. Map focus is more on PvP than PvE.",
+                extraction: "Confusing tunnels create ambush opportunities. Narrow corridors favor close-range combat. Plan exits carefully.",
+                extractionPoints: ["Main Facility Elevator", "Medical Wing Exit", "Assembly Workshop Hatch", "East Tunnel Ladder", "West Maintenance Shaft", "Emergency Stairwell (Red section)", "Ventilation Shaft (Colored areas)"],
+                tips: "BEST map for farming coins and Epic recyclables. High PvP activity due to enclosed spaces. CQB weapons essential. Tempest blueprints in any drawers. Magnetic Accelerators at Medical Research/Exodus POIs.",
+                tags: ["pvp", "farming"]
+            }
+        ];
+
+        // State
+        let ownedWeapons = JSON.parse(localStorage.getItem('ownedWeapons') || '[]');
+        let lootFocusList = JSON.parse(localStorage.getItem('lootFocusList') || '[]');
+        let favoriteWeapons = JSON.parse(localStorage.getItem('favoriteWeapons') || '[]');
+        let favoriteGrenades = JSON.parse(localStorage.getItem('favoriteGrenades') || '[]');
+        let weaponNotes = JSON.parse(localStorage.getItem('weaponNotes') || '{}');
+        let lootNotes = JSON.parse(localStorage.getItem('lootNotes') || '{}');
+        let currentSearchQuery = '';
+        let currentPage = 'loot';
+        let currentAmmoFilter = 'all';
+
+        // Notification system
+        function showNotification(title, message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = `notification-toast ${type}`;
+            
+            const icons = {
+                success: '✅',
+                error: '❌',
+                info: 'ℹ️'
+            };
+            
+            notification.innerHTML = `
+                <div class="notification-icon">${icons[type] || icons.info}</div>
+                <div class="notification-content">
+                    <div class="notification-title">${title}</div>
+                    <div class="notification-message">${message}</div>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // Render functions
+        function renderLoadouts(filter = 'all', searchQuery = '') {
+            const mode = document.querySelector('.mode-btn.active').dataset.mode;
+            const showOwnedOnly = document.getElementById('showAllBtn').style.display === 'flex';
+            const showFavoritesOnly = document.getElementById('showAllFromFavoritesBtn').style.display === 'flex';
+            
+            let filtered = loadouts;
+            
+            // Filter by owned weapons if active
+            if (showOwnedOnly && ownedWeapons.length > 0) {
+                filtered = filtered.filter(l => ownedWeapons.includes(l.weapon));
+            }
+
+            // Filter by favorites if active
+            if (showFavoritesOnly && favoriteWeapons.length > 0) {
+                filtered = filtered.filter(l => favoriteWeapons.includes(l.weapon));
+            }
+            
+            // Filter by weapon category
+            if (filter !== 'all') {
+                filtered = filtered.filter(l => l.category === filter);
+            }
+
+            // Filter by ammo type
+            if (currentAmmoFilter !== 'all') {
+                filtered = filtered.filter(l => l.ammoType === currentAmmoFilter);
+            }
+
+            // Apply search filter
+            if (searchQuery) {
+                const query = searchQuery.toLowerCase();
+                filtered = filtered.filter(l => 
+                    l.weapon.toLowerCase().includes(query) ||
+                    l.type.toLowerCase().includes(query) ||
+                    l.ammoType.toLowerCase().includes(query) ||
+                    l.firingMode.toLowerCase().includes(query) ||
+                    l.rarity.toLowerCase().includes(query) ||
+                    l.bestFor.toLowerCase().includes(query) ||
+                    l.pve.toLowerCase().includes(query) ||
+                    l.pvp.toLowerCase().includes(query)
+                );
+            }
+
+            // Helper function to highlight search terms
+            function highlightText(text, query) {
+                if (!query) return text;
+                const regex = new RegExp(`(${query})`, 'gi');
+                return text.replace(regex, '<span class="search-highlight">$1</span>');
+            }
+
+            const grid = document.getElementById('loadoutGrid');
+            
+            if (filtered.length === 0) {
+                grid.innerHTML = `
+                    <div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: rgba(255,255,255,0.5);">
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">🔍</div>
+                        <div style="font-size: 1.5rem; font-family: 'Teko', sans-serif;">No weapons found matching "${searchQuery}"</div>
+                        <div style="margin-top: 1rem;">Try a different search term or clear the search.</div>
+                    </div>
+                `;
+                return;
+            }
+
+            // Show search results info
+            let htmlOutput = '';
+            if (searchQuery) {
+                htmlOutput += `<div class="search-results-info">Found ${filtered.length} weapon${filtered.length !== 1 ? 's' : ''} matching "${searchQuery}"</div>`;
+            }
+
+            htmlOutput += filtered.map(loadout => {
+                const isFavorite = favoriteWeapons.includes(loadout.weapon);
+                return `
+                <div class="loadout-card">
+                    <div class="tier-badge tier-${loadout.rarity.toLowerCase()}">${loadout.rarity}</div>
+                    <div class="loadout-content">
+                        <div class="weapon-header">
+                            <div class="weapon-name">${highlightText(loadout.weapon, searchQuery)}</div>
+                            <button class="favorite-btn ${isFavorite ? 'active' : ''}" data-weapon="${loadout.weapon}" title="${isFavorite ? 'Remove from favorites' : 'Add to favorites'}">
+                                ${isFavorite ? '⭐' : '☆'}
+                            </button>
+                        </div>
+                        <div class="weapon-meta">
+                            <div class="weapon-type">${highlightText(loadout.type, searchQuery)}</div>
+                            <div class="ammo-badge ammo-${loadout.ammoType.toLowerCase()}">${loadout.ammoType} AMMO</div>
+                        </div>
+                        
+                        <div class="stats-grid">
+                            <div class="stat">
+                                <div class="stat-header">
+                                    <div class="stat-label">Damage</div>
+                                    <div class="stat-value">${loadout.damage}</div>
+                                </div>
+                                <div class="stat-bar">
+                                    <div class="stat-fill" style="width: ${(loadout.damage / 30) * 100}%"></div>
+                                </div>
+                                <div class="stat-comparison ${(loadout.damage - 11) >= 0 ? 'positive' : 'negative'}">vs avg: ${((loadout.damage - 11) >= 0 ? '+' : '')}${(loadout.damage - 11).toFixed(1)}</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-header">
+                                    <div class="stat-label">Fire Rate</div>
+                                    <div class="stat-value">${loadout.fireRate}</div>
+                                </div>
+                                <div class="stat-bar">
+                                    <div class="stat-fill" style="width: ${(loadout.fireRate / 50) * 100}%"></div>
+                                </div>
+                                <div class="stat-comparison ${(loadout.fireRate - 22) >= 0 ? 'positive' : 'negative'}">vs avg: ${((loadout.fireRate - 22) >= 0 ? '+' : '')}${(loadout.fireRate - 22).toFixed(1)}</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-header">
+                                    <div class="stat-label">Magazine</div>
+                                    <div class="stat-value">${loadout.magazine}</div>
+                                </div>
+                                <div class="stat-bar">
+                                    <div class="stat-fill" style="width: ${(loadout.magazine / 100) * 100}%"></div>
+                                </div>
+                                <div class="stat-comparison ${(loadout.magazine - 32) >= 0 ? 'positive' : 'negative'}">vs avg: ${((loadout.magazine - 32) >= 0 ? '+' : '')}${(loadout.magazine - 32).toFixed(0)}</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-header">
+                                    <div class="stat-label">Range</div>
+                                    <div class="stat-value">${loadout.range}</div>
+                                </div>
+                                <div class="stat-bar">
+                                    <div class="stat-fill" style="width: ${(parseFloat(loadout.range) / 100) * 100}%"></div>
+                                </div>
+                                <div class="stat-comparison ${(parseFloat(loadout.range) - 45) >= 0 ? 'positive' : 'negative'}">vs avg: ${((parseFloat(loadout.range) - 45) >= 0 ? '+' : '')}${(parseFloat(loadout.range) - 45).toFixed(1)}m</div>
+                            </div>
+                        </div>
+
+                        ${loadout.secondary !== 'N/A' ? `
+                            <div class="secondary-weapon">
+                                <div class="secondary-label">Recommended Secondary</div>
+                                <div class="secondary-name">${loadout.secondary}</div>
+                            </div>
+                        ` : ''}
+                        
+                        <div class="throwables">
+                            <div class="throwables-header">
+                                <div class="throwables-icon"></div>
+                                <div class="throwables-title">Recommended Throwables</div>
+                            </div>
+                            <div class="throwable-items">
+                                ${loadout.throwables.map(t => 
+                                    `<div class="throwable-tag">${t}</div>`
+                                ).join('')}
+                            </div>
+                        </div>
+                        
+                        ${mode === 'all' ? `
+                            <div class="best-for">
+                                <div class="best-for-label">Best For</div>
+                                <div class="best-for-text">${highlightText(loadout.bestFor, searchQuery)}</div>
+                            </div>
+                        ` : ''}
+                        
+                        ${loadout.pros && loadout.cons ? `
+                            <div class="pros-cons-section">
+                                <div class="pros-column">
+                                    <div class="pros-header">✅ PROS</div>
+                                    <ul class="pros-list">
+                                        ${loadout.pros.map(pro => `<li>${pro}</li>`).join('')}
+                                    </ul>
+                                </div>
+                                <div class="cons-column">
+                                    <div class="cons-header">❌ CONS</div>
+                                    <ul class="cons-list">
+                                        ${loadout.cons.map(con => `<li>${con}</li>`).join('')}
+                                    </ul>
+                                </div>
+                            </div>
+                        ` : ''}
+                        
+                        ${mode === 'pve' || mode === 'all' ? `
+                            <div class="mode-info pve-info">
+                                <div class="mode-info-label">
+                                    <span class="mode-icon">🎯</span> PVE USAGE
+                                </div>
+                                <div class="mode-info-text">${highlightText(loadout.pve, searchQuery)}</div>
+                            </div>
+                        ` : ''}
+                        
+                        ${mode === 'pvp' || mode === 'all' ? `
+                            <div class="mode-info pvp-info">
+                                <div class="mode-info-label">
+                                    <span class="mode-icon">⚔️</span> PVP USAGE
+                                </div>
+                                <div class="mode-info-text">${highlightText(loadout.pvp, searchQuery)}</div>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+            }).join('');
+
+            grid.innerHTML = htmlOutput;
+            
+            // Attach event listeners for favorite buttons and note inputs
+            attachWeaponCardListeners();
+        }
+
+        function attachWeaponCardListeners() {
+            // Favorite buttons
+            document.querySelectorAll('.favorite-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const weapon = btn.dataset.weapon;
+                    if (favoriteWeapons.includes(weapon)) {
+                        favoriteWeapons = favoriteWeapons.filter(w => w !== weapon);
+                        btn.classList.remove('active');
+                        btn.textContent = '☆';
+                        btn.title = 'Add to favorites';
+                    } else {
+                        favoriteWeapons.push(weapon);
+                        btn.classList.add('active');
+                        btn.textContent = '⭐';
+                        btn.title = 'Remove from favorites';
+                    }
+                    localStorage.setItem('favoriteWeapons', JSON.stringify(favoriteWeapons));
+                    updateFavoritesCount();
+                    updateQuickStats();
+                    showAutosave();
+                });
+            });
+        }
+
+        function renderWeaponSelection() {
+            const grid = document.getElementById('weaponsSelectionGrid');
+            grid.innerHTML = loadouts.map(loadout => `
+                <div class="weapon-select-item ${ownedWeapons.includes(loadout.weapon) ? 'selected' : ''}" 
+                     data-weapon="${loadout.weapon}">
+                    <input type="checkbox" 
+                           class="weapon-select-checkbox" 
+                           ${ownedWeapons.includes(loadout.weapon) ? 'checked' : ''}
+                           data-weapon="${loadout.weapon}">
+                    <div class="weapon-select-name">${loadout.weapon}</div>
+                    <div class="weapon-select-tier tier-${loadout.rarity.toLowerCase()}">${loadout.rarity}</div>
+                </div>
+            `).join('');
+
+            // Add event listeners
+            document.querySelectorAll('.weapon-select-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    if (e.target.type !== 'checkbox') {
+                        const checkbox = item.querySelector('.weapon-select-checkbox');
+                        checkbox.checked = !checkbox.checked;
+                        toggleWeapon(checkbox.dataset.weapon, checkbox.checked);
+                    }
+                });
+            });
+
+            document.querySelectorAll('.weapon-select-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', (e) => {
+                    toggleWeapon(e.target.dataset.weapon, e.target.checked);
+                });
+            });
+        }
+
+        function renderLootFocus() {
+            const list = document.getElementById('lootList');
+            
+            if (lootFocusList.length === 0) {
+                list.innerHTML = '<div class="loot-empty">No items in your loot focus list yet. Add items above to track what you\'re looking for!</div>';
+                return;
+            }
+
+            list.innerHTML = lootFocusList.map((item, index) => `
+                <div class="loot-item">
+                    <div class="loot-item-info">
+                        <div class="loot-item-name">${item.name}</div>
+                        <div class="loot-target-line">Target: ${item.quantity}</div>
+                    </div>
+                    <div class="loot-item-controls">
+                        <div class="quantity-controls">
+                            <button class="quantity-btn decrease-qty" data-index="${index}">-</button>
+                            <div class="quantity-display">${item.quantity}</div>
+                            <button class="quantity-btn increase-qty" data-index="${index}">+</button>
+                        </div>
+                        <button class="remove-loot-btn" data-index="${index}">✕</button>
+                    </div>
+                </div>
+            `).join('');
+
+            // Add event listeners
+            document.querySelectorAll('.remove-loot-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    removeLootItem(parseInt(btn.dataset.index));
+                });
+            });
+
+            document.querySelectorAll('.increase-qty').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    updateQuantity(parseInt(btn.dataset.index), 1);
+                });
+            });
+
+            document.querySelectorAll('.decrease-qty').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    updateQuantity(parseInt(btn.dataset.index), -1);
+                });
+            });
+        }
+
+        function toggleWeapon(weaponName, isOwned) {
+            if (isOwned) {
+                if (!ownedWeapons.includes(weaponName)) {
+                    ownedWeapons.push(weaponName);
+                }
+            } else {
+                ownedWeapons = ownedWeapons.filter(w => w !== weaponName);
+            }
+            
+            localStorage.setItem('ownedWeapons', JSON.stringify(ownedWeapons));
+            updateOwnedCount();
+            
+            // Update visual state
+            const item = document.querySelector(`.weapon-select-item[data-weapon="${weaponName}"]`);
+            if (item) {
+                if (isOwned) {
+                    item.classList.add('selected');
+                } else {
+                    item.classList.remove('selected');
+                }
+            }
+        }
+
+        function updateOwnedCount() {
+            document.getElementById('ownedCount').textContent = ownedWeapons.length;
+            
+            if (ownedWeapons.length > 0) {
+                document.getElementById('showOwnedBtn').style.display = 'flex';
+            } else {
+                document.getElementById('showOwnedBtn').style.display = 'none';
+                document.getElementById('showAllBtn').style.display = 'none';
+            }
+        }
+
+        function updateFavoritesCount() {
+            document.getElementById('favoritesCount').textContent = favoriteWeapons.length;
+        }
+
+        function addLootItem(itemName, quantity = 1) {
+            const trimmed = itemName.trim();
+            const qty = Math.max(1, parseInt(quantity) || 1);
+            
+            if (trimmed) {
+                // Check if item already exists
+                const existingIndex = lootFocusList.findIndex(item => item.name === trimmed);
+                if (existingIndex !== -1) {
+                    // Update quantity if item exists
+                    lootFocusList[existingIndex].quantity += qty;
+                } else {
+                    // Add new item
+                    lootFocusList.push({ name: trimmed, quantity: qty });
+                }
+                localStorage.setItem('lootFocusList', JSON.stringify(lootFocusList));
+                renderLootFocus();
+                updateQuickStats();
+                showAutosave();
+                document.getElementById('lootInput').value = '';
+                document.getElementById('lootQuantity').value = '1';
+            }
+        }
+
+        function removeLootItem(index) {
+            lootFocusList.splice(index, 1);
+            localStorage.setItem('lootFocusList', JSON.stringify(lootFocusList));
+            renderLootFocus();
+            updateQuickStats();
+            showAutosave();
+        }
+
+        function updateQuantity(index, change) {
+            if (lootFocusList[index]) {
+                lootFocusList[index].quantity = Math.max(1, lootFocusList[index].quantity + change);
+                localStorage.setItem('lootFocusList', JSON.stringify(lootFocusList));
+                renderLootFocus();
+            }
+        }
+
+        function clearLootList() {
+            if (lootFocusList.length === 0) return;
+            
+            if (confirm('Are you sure you want to clear your entire loot focus list?')) {
+                lootFocusList = [];
+                localStorage.setItem('lootFocusList', JSON.stringify(lootFocusList));
+                renderLootFocus();
+            }
+        }
+
+        // Export data function
+        function exportData() {
+            const data = {
+                version: '2.0',
+                exportDate: new Date().toISOString(),
+                ownedWeapons: ownedWeapons,
+                favoriteWeapons: favoriteWeapons,
+                favoriteGrenades: favoriteGrenades,
+                lootFocusList: lootFocusList
+            };
+
+            const dataStr = JSON.stringify(data, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            
+            const fileName = `arc-raiders-loadout-${new Date().toISOString().split('T')[0]}.json`;
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            const totalFavorites = favoriteWeapons.length + favoriteGrenades.length;
+            showNotification(
+                'Data Exported!',
+                `${ownedWeapons.length} owned, ${totalFavorites} favorites, ${lootFocusList.length} loot items saved to ${fileName}`,
+                'success'
+            );
+        }
+
+        // Import data function
+        function importData(file) {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    
+                    // Validate data structure (support both v1.0 and v2.0)
+                    // Make sure it has at least a version field
+                    if (!data.version) {
+                        throw new Error('Invalid file format. Please select a valid ARC Raiders export file.');
+                    }
+
+                    // Confirm before importing
+                    const exportDate = data.exportDate ? new Date(data.exportDate).toLocaleDateString() : 'Unknown';
+                    const ownedCount = data.ownedWeapons ? data.ownedWeapons.length : 0;
+                    const weaponFavs = data.favoriteWeapons ? data.favoriteWeapons.length : 0;
+                    const grenadeFavs = data.favoriteGrenades ? data.favoriteGrenades.length : 0;
+                    const totalFavs = weaponFavs + grenadeFavs;
+                    const lootCount = data.lootFocusList ? data.lootFocusList.length : 0;
+                    
+                    const confirmMsg = `Import data from ${exportDate}?\n\n` +
+                                      `Owned Weapons: ${ownedCount}\n` +
+                                      `Favorites: ${totalFavs} (${weaponFavs} weapons, ${grenadeFavs} grenades)\n` +
+                                      `Loot Focus Items: ${lootCount}\n\n` +
+                                      `⚠️ This will replace your current data!`;
+                    
+                    if (confirm(confirmMsg)) {
+                        // Import data with fallbacks for missing fields
+                        ownedWeapons = data.ownedWeapons || [];
+                        favoriteWeapons = data.favoriteWeapons || [];
+                        favoriteGrenades = data.favoriteGrenades || [];
+                        lootFocusList = data.lootFocusList || [];
+                        
+                        // Save to localStorage
+                        localStorage.setItem('ownedWeapons', JSON.stringify(ownedWeapons));
+                        localStorage.setItem('favoriteWeapons', JSON.stringify(favoriteWeapons));
+                        localStorage.setItem('favoriteGrenades', JSON.stringify(favoriteGrenades));
+                        localStorage.setItem('lootFocusList', JSON.stringify(lootFocusList));
+                        
+                        // Update UI
+                        updateOwnedCount();
+                        updateFavoritesCount();
+                        updateFavoriteGrenadesCount();
+                        updateQuickStats();
+                        renderLootFocus();
+                        
+                        // Force re-render of all pages
+                        const currentFilter = document.querySelector('.filter-btn.active')?.dataset.filter || 'all';
+                        renderLoadouts(currentFilter, '');
+                        const currentCategory = document.querySelector('.grenade-filter-btn.active')?.dataset.category || 'all';
+                        renderGrenades(currentCategory, '');
+                        
+                        showNotification(
+                            'Data Imported!',
+                            `Loaded ${ownedCount} owned, ${totalFavs} favorites, ${lootCount} loot items`,
+                            'success'
+                        );
+                    }
+                } catch (error) {
+                    showNotification(
+                        'Import Failed',
+                        error.message || 'Please select a valid export file',
+                        'error'
+                    );
+                }
+            };
+            
+            reader.onerror = function() {
+                showNotification(
+                    'Import Failed',
+                    'Error reading file. Please try again.',
+                    'error'
+                );
+            };
+            
+            reader.readAsText(file);
+        }
+
+        function renderGrenades(category = 'all', searchQuery = '') {
+            const showFavoritesOnly = document.getElementById('showAllGrenadesBtn').style.display === 'flex';
+            
+            let filtered = grenades;
+            
+            // Filter by favorites if active
+            if (showFavoritesOnly && favoriteGrenades.length > 0) {
+                filtered = filtered.filter(g => favoriteGrenades.includes(g.name));
+            }
+            
+            if (category !== 'all') {
+                filtered = filtered.filter(g => g.category === category);
+            }
+
+            // Apply search filter
+            if (searchQuery) {
+                const query = searchQuery.toLowerCase();
+                filtered = filtered.filter(g => 
+                    g.name.toLowerCase().includes(query) ||
+                    g.category.toLowerCase().includes(query) ||
+                    g.description.toLowerCase().includes(query) ||
+                    g.bestUse.toLowerCase().includes(query) ||
+                    g.detonation.toLowerCase().includes(query)
+                );
+            }
+
+            // Helper function to highlight search terms
+            function highlightText(text, query) {
+                if (!query) return text;
+                const regex = new RegExp(`(${query})`, 'gi');
+                return text.replace(regex, '<span class="search-highlight">$1</span>');
+            }
+
+            const grid = document.getElementById('grenadesGrid');
+            
+            if (filtered.length === 0) {
+                grid.innerHTML = `
+                    <div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: rgba(255,255,255,0.5);">
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">🔍</div>
+                        <div style="font-size: 1.5rem; font-family: 'Teko', sans-serif;">No grenades found${searchQuery ? ` matching "${searchQuery}"` : ''}</div>
+                        <div style="margin-top: 1rem;">${searchQuery ? 'Try a different search term or clear the search.' : 'Try adding some favorites!'}</div>
+                    </div>
+                `;
+                return;
+            }
+
+            let htmlOutput = '';
+            if (searchQuery) {
+                htmlOutput += `<div class="search-results-info">Found ${filtered.length} grenade${filtered.length !== 1 ? 's' : ''} matching "${searchQuery}"</div>`;
+            }
+
+            htmlOutput += filtered.map(grenade => {
+                const isFavorite = favoriteGrenades.includes(grenade.name);
+                return `
+                <div class="grenade-card">
+                    <div class="grenade-header">
+                        <div class="grenade-name">${highlightText(grenade.name, searchQuery)}</div>
+                        <button class="favorite-btn grenade-favorite-btn ${isFavorite ? 'active' : ''}" data-grenade="${grenade.name}" title="${isFavorite ? 'Remove from favorites' : 'Add to favorites'}">
+                            ${isFavorite ? '⭐' : '☆'}
+                        </button>
+                    </div>
+                    <div class="grenade-category-badge">${grenade.category}</div>
+                    <div class="grenade-description">${highlightText(grenade.description, searchQuery)}</div>
+                    <div class="grenade-stats">
+                        <div class="grenade-stat">
+                            <div class="grenade-stat-label">Damage</div>
+                            <div class="grenade-stat-value">${grenade.damage}</div>
+                        </div>
+                        <div class="grenade-stat">
+                            <div class="grenade-stat-label">Radius</div>
+                            <div class="grenade-stat-value">${grenade.radius}</div>
+                        </div>
+                        <div class="grenade-stat">
+                            <div class="grenade-stat-label">Detonation</div>
+                            <div class="grenade-stat-value">${highlightText(grenade.detonation, searchQuery)}</div>
+                        </div>
+                    </div>
+                    <div class="grenade-uses">
+                        <div class="grenade-uses-title">Best Use</div>
+                        <div class="grenade-uses-text">${highlightText(grenade.bestUse, searchQuery)}</div>
+                    </div>
+                    ${grenade.pros && grenade.cons ? `
+                        <div class="pros-cons-section">
+                            <div class="pros-column">
+                                <div class="pros-header">✅ PROS</div>
+                                <ul class="pros-list">
+                                    ${grenade.pros.map(pro => `<li>${pro}</li>`).join('')}
+                                </ul>
+                            </div>
+                            <div class="cons-column">
+                                <div class="cons-header">❌ CONS</div>
+                                <ul class="cons-list">
+                                    ${grenade.cons.map(con => `<li>${con}</li>`).join('')}
+                                </ul>
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+            `}).join('');
+
+            grid.innerHTML = htmlOutput;
+            
+            // Attach favorite button listeners
+            attachGrenadeFavoriteListeners();
+        }
+
+        function attachGrenadeFavoriteListeners() {
+            document.querySelectorAll('.grenade-favorite-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const grenade = btn.dataset.grenade;
+                    if (favoriteGrenades.includes(grenade)) {
+                        favoriteGrenades = favoriteGrenades.filter(g => g !== grenade);
+                        btn.classList.remove('active');
+                        btn.textContent = '☆';
+                        btn.title = 'Add to favorites';
+                    } else {
+                        favoriteGrenades.push(grenade);
+                        btn.classList.add('active');
+                        btn.textContent = '⭐';
+                        btn.title = 'Remove from favorites';
+                    }
+                    localStorage.setItem('favoriteGrenades', JSON.stringify(favoriteGrenades));
+                    updateFavoriteGrenadesCount();
+                    updateQuickStats();
+                    showAutosave();
+                });
+            });
+        }
+
+        function updateFavoriteGrenadesCount() {
+            document.getElementById('favoriteGrenadesCount').textContent = favoriteGrenades.length;
+        }
+
+        function renderMaps(searchQuery = '') {
+            let filtered = maps;
+
+            // Apply search filter
+            if (searchQuery) {
+                const query = searchQuery.toLowerCase();
+                filtered = filtered.filter(m => 
+                    m.name.toLowerCase().includes(query) ||
+                    (m.subtitle && m.subtitle.toLowerCase().includes(query)) ||
+                    (m.description && m.description.toLowerCase().includes(query)) ||
+                    (m.bestFor && m.bestFor.some(b => b.toLowerCase().includes(query))) ||
+                    (m.highValueLoot && m.highValueLoot.some(h => h.toLowerCase().includes(query))) ||
+                    (m.arcSpawns && m.arcSpawns.toLowerCase().includes(query)) ||
+                    (m.tips && m.tips.toLowerCase().includes(query))
+                );
+            }
+
+            // Helper function to highlight search terms
+            function highlightText(text, query) {
+                if (!query) return text;
+                const regex = new RegExp(`(${query})`, 'gi');
+                return text.replace(regex, '<span class="search-highlight">$1</span>');
+            }
+
+            const grid = document.getElementById('mapsGrid');
+            
+            if (filtered.length === 0) {
+                grid.innerHTML = `
+                    <div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: rgba(255,255,255,0.5);">
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">🔍</div>
+                        <div style="font-size: 1.5rem; font-family: 'Teko', sans-serif;">No maps found matching "${searchQuery}"</div>
+                        <div style="margin-top: 1rem;">Try a different search term or clear the search.</div>
+                    </div>
+                `;
+                return;
+            }
+
+            let htmlOutput = '';
+            if (searchQuery) {
+                htmlOutput += `<div class="search-results-info">Found ${filtered.length} map${filtered.length !== 1 ? 's' : ''} matching "${searchQuery}"</div>`;
+            }
+
+            htmlOutput += filtered.map(map => `
+                <div class="map-card">
+                    <div class="map-header">
+                        <div class="map-name">${highlightText(map.name, searchQuery)}</div>
+                        <div class="map-subtitle">${highlightText(map.subtitle, searchQuery)}</div>
+                    </div>
+                    <div class="map-description">${highlightText(map.description, searchQuery)}</div>
+                    
+                    <div class="map-features">
+                        <div class="map-feature-section">
+                            <div class="map-feature-title">Best For</div>
+                            <div class="map-feature-list">${map.bestFor.map(b => highlightText(b, searchQuery)).join(' • ')}</div>
+                        </div>
+                        
+                        <div class="map-feature-section">
+                            <div class="map-feature-title">High-Value Loot</div>
+                            <div class="map-feature-list">${map.highValueLoot.map(h => `<div>• ${highlightText(h, searchQuery)}</div>`).join('')}</div>
+                        </div>
+                        
+                        <div class="map-feature-section">
+                            <div class="map-feature-title">ARC Activity</div>
+                            <div class="map-feature-list">${highlightText(map.arcSpawns, searchQuery)}</div>
+                        </div>
+                        
+                        <div class="map-feature-section">
+                            <div class="map-feature-title">Extraction Intel</div>
+                            <div class="map-feature-list">${highlightText(map.extraction, searchQuery)}</div>
+                        </div>
+                        
+                        <div class="map-feature-section">
+                            <div class="map-feature-title">🚁 Extraction Points</div>
+                            <div class="map-feature-list extraction-points">${map.extractionPoints.map(e => `<div class="extraction-point">✓ ${highlightText(e, searchQuery)}</div>`).join('')}</div>
+                        </div>
+                        
+                        <div class="map-feature-section">
+                            <div class="map-feature-title">⚡ Pro Tips</div>
+                            <div class="map-feature-list">${highlightText(map.tips, searchQuery)}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="map-tags">
+                        ${map.tags.map(tag => `<div class="map-tag ${tag}">${tag.toUpperCase()}</div>`).join('')}
+                    </div>
+                </div>
+            `).join('');
+
+            grid.innerHTML = htmlOutput;
+        }
+
+        function switchPage(pageName) {
+            currentPage = pageName;
+            
+            // Hide all pages
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            
+            // Show selected page
+            document.getElementById(pageName + 'Page').classList.add('active');
+            
+            // Update nav buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.page === pageName) {
+                    btn.classList.add('active');
+                }
+            });
+
+            // Re-render with current search query
+            if (pageName === 'loot') {
+                renderLootFocus();
+            } else if (pageName === 'loadouts') {
+                const currentFilter = document.querySelector('.filter-btn.active')?.dataset.filter || 'all';
+                renderLoadouts(currentFilter, currentSearchQuery);
+            } else if (pageName === 'grenades') {
+                const currentCategory = document.querySelector('.grenade-filter-btn.active')?.dataset.category || 'all';
+                renderGrenades(currentCategory, currentSearchQuery);
+            } else if (pageName === 'maps') {
+                renderMaps(currentSearchQuery);
+            }
+        }
+
+        // Event listeners
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                renderLoadouts(btn.dataset.filter, currentSearchQuery);
+            });
+        });
+
+        document.querySelectorAll('.ammo-filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.ammo-filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentAmmoFilter = btn.dataset.ammo;
+                const currentFilter = document.querySelector('.filter-btn.active').dataset.filter;
+                renderLoadouts(currentFilter, currentSearchQuery);
+            });
+        });
+
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const currentFilter = document.querySelector('.filter-btn.active').dataset.filter;
+                renderLoadouts(currentFilter, currentSearchQuery);
+            });
+        });
+
+        // Arsenal management
+        document.getElementById('manageArsenalBtn').addEventListener('click', () => {
+            document.getElementById('arsenalModal').classList.add('active');
+            renderWeaponSelection();
+        });
+
+        document.getElementById('closeModal').addEventListener('click', () => {
+            document.getElementById('arsenalModal').classList.remove('active');
+            const currentFilter = document.querySelector('.filter-btn.active').dataset.filter;
+            renderLoadouts(currentFilter);
+        });
+
+        document.getElementById('arsenalModal').addEventListener('click', (e) => {
+            if (e.target.id === 'arsenalModal') {
+                document.getElementById('arsenalModal').classList.remove('active');
+                const currentFilter = document.querySelector('.filter-btn.active').dataset.filter;
+                renderLoadouts(currentFilter);
+            }
+        });
+
+        document.getElementById('showOwnedBtn').addEventListener('click', () => {
+            document.getElementById('showOwnedBtn').style.display = 'none';
+            document.getElementById('showAllBtn').style.display = 'flex';
+            const currentFilter = document.querySelector('.filter-btn.active').dataset.filter;
+            renderLoadouts(currentFilter);
+        });
+
+        document.getElementById('showAllBtn').addEventListener('click', () => {
+            document.getElementById('showAllBtn').style.display = 'none';
+            document.getElementById('showOwnedBtn').style.display = 'flex';
+            const currentFilter = document.querySelector('.filter-btn.active').dataset.filter;
+            renderLoadouts(currentFilter);
+        });
+
+        document.getElementById('showFavoritesBtn').addEventListener('click', () => {
+            if (favoriteWeapons.length === 0) {
+                showNotification('No Favorites', 'Star some weapons first to use this filter!', 'info');
+                return;
+            }
+            document.getElementById('showFavoritesBtn').style.display = 'none';
+            document.getElementById('showAllFromFavoritesBtn').style.display = 'flex';
+            // Hide owned filter when showing favorites
+            document.getElementById('showOwnedBtn').style.display = 'none';
+            document.getElementById('showAllBtn').style.display = 'none';
+            const currentFilter = document.querySelector('.filter-btn.active').dataset.filter;
+            renderLoadouts(currentFilter);
+        });
+
+        document.getElementById('showAllFromFavoritesBtn').addEventListener('click', () => {
+            document.getElementById('showAllFromFavoritesBtn').style.display = 'none';
+            document.getElementById('showFavoritesBtn').style.display = 'flex';
+            // Restore owned filter visibility if applicable
+            if (ownedWeapons.length > 0) {
+                document.getElementById('showOwnedBtn').style.display = 'flex';
+            }
+            const currentFilter = document.querySelector('.filter-btn.active').dataset.filter;
+            renderLoadouts(currentFilter);
+        });
+
+        // Quick selection buttons
+        document.getElementById('selectAllWeapons').addEventListener('click', () => {
+            ownedWeapons = loadouts.map(l => l.weapon);
+            localStorage.setItem('ownedWeapons', JSON.stringify(ownedWeapons));
+            renderWeaponSelection();
+            updateOwnedCount();
+        });
+
+        document.getElementById('deselectAllWeapons').addEventListener('click', () => {
+            ownedWeapons = [];
+            localStorage.setItem('ownedWeapons', JSON.stringify(ownedWeapons));
+            renderWeaponSelection();
+            updateOwnedCount();
+        });
+
+        document.getElementById('selectTierS').addEventListener('click', () => {
+            // Select Epic and Legendary weapons
+            ownedWeapons = loadouts.filter(l => l.rarity === 'Epic' || l.rarity === 'Legendary').map(l => l.weapon);
+            localStorage.setItem('ownedWeapons', JSON.stringify(ownedWeapons));
+            renderWeaponSelection();
+            updateOwnedCount();
+        });
+
+        document.getElementById('selectCommon').addEventListener('click', () => {
+            // Select all Common weapons
+            ownedWeapons = loadouts.filter(l => l.rarity === 'Common').map(l => l.weapon);
+            localStorage.setItem('ownedWeapons', JSON.stringify(ownedWeapons));
+            renderWeaponSelection();
+            updateOwnedCount();
+        });
+
+        // Loot Focus event listeners
+        document.getElementById('addLootBtn').addEventListener('click', () => {
+            const input = document.getElementById('lootInput');
+            const quantity = document.getElementById('lootQuantity');
+            addLootItem(input.value, quantity.value);
+        });
+
+        document.getElementById('lootInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const quantity = document.getElementById('lootQuantity');
+                addLootItem(e.target.value, quantity.value);
+            }
+        });
+
+        document.getElementById('lootQuantity').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const input = document.getElementById('lootInput');
+                addLootItem(input.value, e.target.value);
+            }
+        });
+
+        document.getElementById('clearLootListBtn').addEventListener('click', clearLootList);
+
+        // Export/Import event listeners
+        // Hamburger menu
+        const hamburgerBtn = document.getElementById('hamburgerBtn');
+        const hamburgerDropdown = document.getElementById('hamburgerDropdown');
+        
+        hamburgerBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            hamburgerBtn.classList.toggle('active');
+            hamburgerDropdown.classList.toggle('show');
+        });
+
+        // Close menu when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!hamburgerDropdown.contains(e.target) && !hamburgerBtn.contains(e.target)) {
+                hamburgerBtn.classList.remove('active');
+                hamburgerDropdown.classList.remove('show');
+            }
+        });
+
+        // Export/Import from hamburger menu
+        document.getElementById('exportDataBtnMenu').addEventListener('click', () => {
+            exportData();
+            hamburgerBtn.classList.remove('active');
+            hamburgerDropdown.classList.remove('show');
+        });
+        
+        document.getElementById('importDataBtnMenu').addEventListener('click', () => {
+            document.getElementById('importFileInputMenu').click();
+            hamburgerBtn.classList.remove('active');
+            hamburgerDropdown.classList.remove('show');
+        });
+        
+        document.getElementById('importFileInputMenu').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                importData(file);
+                // Reset input so same file can be selected again
+                e.target.value = '';
+            }
+        });
+
+        // Quick preset filters
+        let activePreset = null;
+        
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const preset = btn.dataset.preset;
+                
+                // If clicking the same preset, deactivate and show all
+                if (activePreset === preset) {
+                    btn.classList.remove('active');
+                    activePreset = null;
+                    renderLoadouts('all', '');
+                    showNotification('Filter Cleared', 'Showing all weapons', 'info');
+                    return;
+                }
+                
+                // Deactivate previous preset
+                document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                activePreset = preset;
+                
+                // Reset other filters first
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                document.querySelector('.filter-btn[data-filter="all"]').classList.add('active');
+                document.querySelectorAll('.ammo-filter-btn').forEach(b => b.classList.remove('active'));
+                document.querySelector('.ammo-filter-btn[data-ammo="all"]').classList.add('active');
+                currentAmmoFilter = 'all';
+                
+                // Apply preset filter by modifying the loadouts temporarily
+                const currentFilter = 'all';
+                const searchQuery = '';
+                
+                // Get base filtered list
+                let filtered = loadouts;
+                
+                switch(preset) {
+                    case 'meta':
+                        // Epic+ rarity weapons
+                        filtered = loadouts.filter(l => l.rarity === 'Epic' || l.rarity === 'Legendary');
+                        showNotification('🔥 META', 'Showing Epic and Legendary weapons', 'info');
+                        break;
+                    case 'highDamage':
+                        // Damage >= 15
+                        filtered = loadouts.filter(l => l.damage >= 15);
+                        showNotification('💥 HIGH DAMAGE', 'Showing weapons with 15+ damage', 'info');
+                        break;
+                    case 'fastFire':
+                        // Fire rate >= 25
+                        filtered = loadouts.filter(l => l.fireRate >= 25);
+                        showNotification('⚡ FAST FIRE', 'Showing weapons with 25+ fire rate', 'info');
+                        break;
+                    case 'longRange':
+                        // Range >= 40m
+                        filtered = loadouts.filter(l => parseFloat(l.range) >= 40);
+                        showNotification('🎯 LONG RANGE', 'Showing weapons with 40m+ range', 'info');
+                        break;
+                    case 'beginner':
+                        // Common/Uncommon
+                        filtered = loadouts.filter(l => l.rarity === 'Common' || l.rarity === 'Uncommon');
+                        showNotification('🌟 BEGINNER', 'Showing Common and Uncommon weapons', 'info');
+                        break;
+                }
+                
+                // Render the filtered results manually
+                const grid = document.getElementById('loadoutGrid');
+                
+                if (filtered.length === 0) {
+                    grid.innerHTML = `
+                        <div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: rgba(255,255,255,0.5);">
+                            <div style="font-size: 3rem; margin-bottom: 1rem;">🔍</div>
+                            <div style="font-size: 1.5rem; font-family: 'Teko', sans-serif;">No weapons match this preset</div>
+                        </div>
+                    `;
+                } else {
+                    // Use the same rendering logic as renderLoadouts
+                    const mode = document.querySelector('.mode-btn.active').dataset.mode;
+                    
+                    const htmlOutput = filtered.map(loadout => {
+                        const isFavorite = favoriteWeapons.includes(loadout.weapon);
+                        return `
+                        <div class="loadout-card">
+                            <div class="tier-badge tier-${loadout.rarity.toLowerCase()}">${loadout.rarity}</div>
+                            <div class="loadout-content">
+                                <div class="weapon-header">
+                                    <div class="weapon-name">${loadout.weapon}</div>
+                                    <button class="favorite-btn ${isFavorite ? 'active' : ''}" data-weapon="${loadout.weapon}" title="${isFavorite ? 'Remove from favorites' : 'Add to favorites'}">
+                                        ${isFavorite ? '⭐' : '☆'}
+                                    </button>
+                                </div>
+                                <div class="weapon-meta">
+                                    <div class="weapon-type">${loadout.type}</div>
+                                    <div class="ammo-badge ammo-${loadout.ammoType.toLowerCase()}">${loadout.ammoType} AMMO</div>
+                                </div>
+                                
+                                <div class="stats-grid">
+                                    <div class="stat">
+                                        <div class="stat-header">
+                                            <div class="stat-label">Damage</div>
+                                            <div class="stat-value">${loadout.damage}</div>
+                                        </div>
+                                        <div class="stat-bar">
+                                            <div class="stat-fill" style="width: ${(loadout.damage / 30) * 100}%"></div>
+                                        </div>
+                                        <div class="stat-comparison">vs avg: ${((loadout.damage - 11) >= 0 ? '+' : '')}${(loadout.damage - 11).toFixed(1)}</div>
+                                    </div>
+                                    <div class="stat">
+                                        <div class="stat-header">
+                                            <div class="stat-label">Fire Rate</div>
+                                            <div class="stat-value">${loadout.fireRate}</div>
+                                        </div>
+                                        <div class="stat-bar">
+                                            <div class="stat-fill" style="width: ${(loadout.fireRate / 50) * 100}%"></div>
+                                        </div>
+                                        <div class="stat-comparison">vs avg: ${((loadout.fireRate - 22) >= 0 ? '+' : '')}${(loadout.fireRate - 22).toFixed(1)}</div>
+                                    </div>
+                                    <div class="stat">
+                                        <div class="stat-header">
+                                            <div class="stat-label">Magazine</div>
+                                            <div class="stat-value">${loadout.magazine}</div>
+                                        </div>
+                                        <div class="stat-bar">
+                                            <div class="stat-fill" style="width: ${(loadout.magazine / 100) * 100}%"></div>
+                                        </div>
+                                        <div class="stat-comparison">vs avg: ${((loadout.magazine - 32) >= 0 ? '+' : '')}${(loadout.magazine - 32).toFixed(0)}</div>
+                                    </div>
+                                    <div class="stat">
+                                        <div class="stat-header">
+                                            <div class="stat-label">Range</div>
+                                            <div class="stat-value">${loadout.range}</div>
+                                        </div>
+                                        <div class="stat-bar">
+                                            <div class="stat-fill" style="width: ${(parseFloat(loadout.range) / 100) * 100}%"></div>
+                                        </div>
+                                        <div class="stat-comparison">vs avg: ${((parseFloat(loadout.range) - 45) >= 0 ? '+' : '')}${(parseFloat(loadout.range) - 45).toFixed(1)}m</div>
+                                    </div>
+                                </div>
+
+                                ${loadout.secondary !== 'N/A' ? `
+                                    <div class="secondary-weapon">
+                                        <div class="secondary-label">Recommended Secondary</div>
+                                        <div class="secondary-name">${loadout.secondary}</div>
+                                    </div>
+                                ` : ''}
+                                
+                                <div class="throwables">
+                                    <div class="throwables-header">
+                                        <div class="throwables-icon"></div>
+                                        <div class="throwables-title">Recommended Throwables</div>
+                                    </div>
+                                    <div class="throwable-items">
+                                        ${loadout.throwables.map(t => 
+                                            `<div class="throwable-tag">${t}</div>`
+                                        ).join('')}
+                                    </div>
+                                </div>
+                                
+                                ${mode === 'all' ? `
+                                    <div class="best-for">
+                                        <div class="best-for-label">Best For</div>
+                                        <div class="best-for-text">${loadout.bestFor}</div>
+                                    </div>
+                                ` : ''}
+                                
+                                ${mode === 'pve' || mode === 'all' ? `
+                                    <div class="mode-info pve-info">
+                                        <div class="mode-info-label">
+                                            <span class="mode-icon">🎯</span> PVE USAGE
+                                        </div>
+                                        <div class="mode-info-text">${loadout.pve}</div>
+                                    </div>
+                                ` : ''}
+                                
+                                ${mode === 'pvp' || mode === 'all' ? `
+                                    <div class="mode-info pvp-info">
+                                        <div class="mode-info-label">
+                                            <span class="mode-icon">⚔️</span> PVP USAGE
+                                        </div>
+                                        <div class="mode-info-text">${loadout.pvp}</div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                    }).join('');
+                    
+                    grid.innerHTML = htmlOutput;
+                    attachWeaponCardListeners();
+                }
+            });
+        });
+
+        // Initialize
+        updateOwnedCount();
+        updateFavoritesCount();
+        updateFavoriteGrenadesCount();
+        updateQuickStats();
+        renderLoadouts();
+        renderLootFocus();
+        renderGrenades();
+        renderMaps();
+
+        // Update quick stats summary
+        function updateQuickStats() {
+            document.getElementById('totalWeapons').textContent = loadouts.length;
+            const totalFavorites = favoriteWeapons.length + favoriteGrenades.length;
+            document.getElementById('totalFavorites').textContent = totalFavorites;
+            document.getElementById('totalOwned').textContent = ownedWeapons.length;
+            document.getElementById('totalLootItems').textContent = lootFocusList.length;
+        }
+
+        // Show autosave indicator
+        function showAutosave() {
+            const indicator = document.getElementById('autosaveIndicator');
+            indicator.classList.add('show');
+            setTimeout(() => {
+                indicator.classList.remove('show');
+            }, 2000);
+        }
+
+        // Scroll to top button
+        const scrollBtn = document.getElementById('scrollToTopBtn');
+        window.addEventListener('scroll', () => {
+            if (window.pageYOffset > 300) {
+                scrollBtn.classList.add('show');
+            } else {
+                scrollBtn.classList.remove('show');
+            }
+        });
+
+        scrollBtn.addEventListener('click', () => {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
+
+        // Sort functionality
+        document.getElementById('sortSelect').addEventListener('change', (e) => {
+            const sortBy = e.target.value;
+            sortWeapons(sortBy);
+        });
+
+        function sortWeapons(sortBy) {
+            const currentFilter = document.querySelector('.filter-btn.active').dataset.filter;
+            
+            switch(sortBy) {
+                case 'name':
+                    loadouts.sort((a, b) => a.weapon.localeCompare(b.weapon));
+                    break;
+                case 'damage':
+                    loadouts.sort((a, b) => b.damage - a.damage);
+                    break;
+                case 'fireRate':
+                    loadouts.sort((a, b) => b.fireRate - a.fireRate);
+                    break;
+                case 'range':
+                    loadouts.sort((a, b) => parseFloat(b.range) - parseFloat(a.range));
+                    break;
+                case 'rarity':
+                    const rarityOrder = { 'Legendary': 0, 'Epic': 1, 'Uncommon': 2, 'Common': 3 };
+                    loadouts.sort((a, b) => rarityOrder[a.rarity] - rarityOrder[b.rarity]);
+                    break;
+            }
+            
+            renderLoadouts(currentFilter, currentSearchQuery);
+        }
+
+        // Clear all filters
+        document.getElementById('clearAllFiltersBtn').addEventListener('click', () => {
+            // Reset weapon type filter
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            document.querySelector('.filter-btn[data-filter="all"]').classList.add('active');
+            
+            // Reset ammo filter
+            document.querySelectorAll('.ammo-filter-btn').forEach(b => b.classList.remove('active'));
+            document.querySelector('.ammo-filter-btn[data-ammo="all"]').classList.add('active');
+            currentAmmoFilter = 'all';
+            
+            // Reset mode
+            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+            document.querySelector('.mode-btn[data-mode="all"]').classList.add('active');
+            
+            // Reset quick presets
+            document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+            activePreset = null;
+            
+            // Reset search
+            document.getElementById('globalSearch').value = '';
+            currentSearchQuery = '';
+            document.getElementById('clearSearch').style.display = 'none';
+            
+            // Reset sort
+            document.getElementById('sortSelect').value = 'name';
+            
+            renderLoadouts('all', '');
+            showNotification('Filters Cleared', 'All filters have been reset', 'info');
+        });
+
+        // Navigation event listeners
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                switchPage(btn.dataset.page);
+            });
+        });
+
+        // Grenade filter event listeners
+        document.querySelectorAll('.grenade-filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.grenade-filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                renderGrenades(btn.dataset.category, currentSearchQuery);
+            });
+        });
+
+        // Grenade favorites toggle
+        document.getElementById('showFavoriteGrenadesBtn').addEventListener('click', () => {
+            if (favoriteGrenades.length === 0) {
+                showNotification('No Favorites', 'Star some grenades to add them to favorites!', 'info');
+                return;
+            }
+            document.getElementById('showFavoriteGrenadesBtn').style.display = 'none';
+            document.getElementById('showAllGrenadesBtn').style.display = 'flex';
+            renderGrenades(document.querySelector('.grenade-filter-btn.active').dataset.category, currentSearchQuery);
+        });
+
+        document.getElementById('showAllGrenadesBtn').addEventListener('click', () => {
+            document.getElementById('showFavoriteGrenadesBtn').style.display = 'flex';
+            document.getElementById('showAllGrenadesBtn').style.display = 'none';
+            renderGrenades(document.querySelector('.grenade-filter-btn.active').dataset.category, currentSearchQuery);
+        });
+
+        // Grenade sort functionality
+        document.getElementById('grenadeSortSelect').addEventListener('change', (e) => {
+            const sortBy = e.target.value;
+            sortGrenades(sortBy);
+        });
+
+        function sortGrenades(sortBy) {
+            const currentCategory = document.querySelector('.grenade-filter-btn.active').dataset.category;
+            
+            switch(sortBy) {
+                case 'name':
+                    grenades.sort((a, b) => a.name.localeCompare(b.name));
+                    break;
+                case 'damage':
+                    grenades.sort((a, b) => parseInt(b.damage) - parseInt(a.damage));
+                    break;
+                case 'radius':
+                    grenades.sort((a, b) => parseFloat(b.radius) - parseFloat(a.radius));
+                    break;
+                case 'category':
+                    grenades.sort((a, b) => a.category.localeCompare(b.category));
+                    break;
+            }
+            
+            renderGrenades(currentCategory, currentSearchQuery);
+        }
+
+        // Global search functionality
+        const searchInput = document.getElementById('globalSearch');
+        const clearSearchBtn = document.getElementById('clearSearch');
+
+        searchInput.addEventListener('input', (e) => {
+            currentSearchQuery = e.target.value.trim();
+            
+            // Show/hide clear button
+            if (currentSearchQuery) {
+                clearSearchBtn.style.display = 'block';
+            } else {
+                clearSearchBtn.style.display = 'none';
+            }
+
+            // If search query exists, find best matching tab and switch to it
+            if (currentSearchQuery) {
+                const query = currentSearchQuery.toLowerCase();
+                
+                // Check which content has matches
+                const weaponMatches = loadouts.filter(l => 
+                    l.weapon.toLowerCase().includes(query) ||
+                    l.type.toLowerCase().includes(query) ||
+                    l.category.toLowerCase().includes(query) ||
+                    l.ammoType.toLowerCase().includes(query) ||
+                    l.firingMode.toLowerCase().includes(query) ||
+                    l.rarity.toLowerCase().includes(query) ||
+                    l.bestFor.toLowerCase().includes(query)
+                ).length;
+                
+                const grenadeMatches = grenades.filter(g =>
+                    g.name.toLowerCase().includes(query) ||
+                    g.category.toLowerCase().includes(query) ||
+                    g.description.toLowerCase().includes(query) ||
+                    g.bestUse.toLowerCase().includes(query) ||
+                    g.detonation.toLowerCase().includes(query)
+                ).length;
+                
+                const mapMatches = maps.filter(m =>
+                    m.name.toLowerCase().includes(query) ||
+                    m.description.toLowerCase().includes(query) ||
+                    (m.loot && m.loot.some(loot => loot.item.toLowerCase().includes(query)))
+                ).length;
+                
+                // Switch to the tab with most matches (prioritize weapons, then grenades, then maps)
+                if (weaponMatches > 0 && weaponMatches >= grenadeMatches && weaponMatches >= mapMatches) {
+                    if (currentPage !== 'loadouts') {
+                        switchPage('loadouts');
+                    }
+                } else if (grenadeMatches > 0 && grenadeMatches >= weaponMatches && grenadeMatches >= mapMatches) {
+                    if (currentPage !== 'grenades') {
+                        switchPage('grenades');
+                    }
+                } else if (mapMatches > 0) {
+                    if (currentPage !== 'maps') {
+                        switchPage('maps');
+                    }
+                } else if (weaponMatches === 0 && grenadeMatches === 0 && mapMatches === 0) {
+                    // No matches found - try weapons first as default
+                    if (currentPage === 'loot') {
+                        switchPage('loadouts');
+                    }
+                }
+            }
+
+            // Render based on current page
+            if (currentPage === 'loadouts') {
+                const currentFilter = document.querySelector('.filter-btn.active')?.dataset.filter || 'all';
+                renderLoadouts(currentFilter, currentSearchQuery);
+            } else if (currentPage === 'grenades') {
+                const currentCategory = document.querySelector('.grenade-filter-btn.active')?.dataset.category || 'all';
+                renderGrenades(currentCategory, currentSearchQuery);
+            } else if (currentPage === 'maps') {
+                renderMaps(currentSearchQuery);
+            }
+        });
+
+        clearSearchBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            currentSearchQuery = '';
+            clearSearchBtn.style.display = 'none';
+            
+            // Re-render current page
+            if (currentPage === 'loadouts') {
+                const currentFilter = document.querySelector('.filter-btn.active')?.dataset.filter || 'all';
+                renderLoadouts(currentFilter, '');
+            } else if (currentPage === 'grenades') {
+                const currentCategory = document.querySelector('.grenade-filter-btn.active')?.dataset.category || 'all';
+                renderGrenades(currentCategory, '');
+            } else if (currentPage === 'maps') {
+                renderMaps('');
+            }
+        });
+
+        // Register service worker for PWA (only on supported environments)
+        if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === 'localhost')) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('service-worker.js')
+                    .then(reg => console.log('✅ Service Worker registered - App can work offline'))
+                    .catch(err => {
+                        // Silently fail - service worker is optional enhancement
+                        console.log('ℹ️ Service Worker not available (this is fine for local files)');
+                    });
+            });
+        }
+    </script>
+</body>
+</html>
