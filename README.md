@@ -14,6 +14,17 @@ Tactical loadout optimizer for [ARC Raiders](https://www.arcraiders.com) by Emba
 
 Your picks, notes, and favorites are saved in the browser (localStorage). No account, no backend.
 
+## How to use
+
+1. **Open the dash** at the live link above (or open `ARC-Raiders-Dash.html` locally).
+2. **Weapons tab** - Browse the arsenal. Use the category buttons (assault rifles, SMGs, shotguns, etc.) or the ammo filter to narrow it down. Click a weapon for full stats, pros/cons, and PvE/PvP notes.
+3. **Arsenal Management** (hamburger menu, top right) - Check off the weapons you actually own. The dash filters everything else to match your inventory, so you're only comparing what you can bring.
+4. **Loot Focus List** - Add items you're farming so you know what to grab topside.
+5. **Grenades tab** - Look up any grenade or throwable before a raid.
+6. **Battleground Intel tab** - Pick your map for loot locations, ARC spawns, extraction points, and tips.
+
+Tip: install it as an app from your browser's menu for fullscreen offline use.
+
 ## Run it
 
 It's a single HTML file. Open `ARC-Raiders-Dash.html` in any browser, or host it anywhere static.
