@@ -2,6 +2,8 @@
 
 Tactical loadout optimizer for [ARC Raiders](https://www.arcraiders.com) by Embark Studios. Track weapons, manage your arsenal, and plan your raids.
 
+**Live:** https://dhrandy.github.io/ARC-Raiders-Dash/
+
 ## What it does
 
 - **Weapons** - Browse all 26 weapons with stats, firing modes, ammo types, and PvE/PvP breakdowns. Filter by category or ammo type, search, and mark what you own.
