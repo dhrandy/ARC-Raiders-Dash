@@ -25,6 +25,14 @@ Your picks, notes, and favorites are saved in the browser (localStorage). No acc
 
 Tip: install it as an app from your browser's menu for fullscreen offline use.
 
+## Back up / move your data (import & export)
+
+Everything you mark (owned weapons, favorites, loot list, notes) is stored in your browser's localStorage. To back it up or move it to another device:
+
+1. Open the **hamburger menu** (top right).
+2. **Export** - Downloads a JSON file (`arc-raiders-loadout-YYYY-MM-DD.json`) with all your data.
+3. **Import** - On the other device, open the hamburger menu, choose Import, and select the file. You'll get a confirmation showing what's in it before it replaces your current data.
+
 ## Run it
 
 It's a single HTML file. Open `ARC-Raiders-Dash.html` in any browser, or host it anywhere static.
