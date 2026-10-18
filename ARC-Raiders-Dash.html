@@ -3022,7 +3022,7 @@
                 weapon: "ANVIL",
                 type: "Hand Cannon",
                 category: "hand",
-                rarity: "Uncommon",
+                rarity: "Rare",
                 damage: 40,
                 fireRate: 16.3,
                 magazine: 6,
@@ -3034,7 +3034,7 @@
                 bestFor: "Devastating hand cannon with massive per-shot damage",
                 pve: "Incredible damage in PvE. Can down most enemies in few shots.",
                 pvp: "Extremely powerful. Functions like a primary weapon as a sidearm.",
-                pros: ["Massive damage", "Hand cannon power", "Great range", "Uncommon"],
+                pros: ["Massive damage", "Hand cannon power", "Great range", "Rare"],
                 cons: ["Only 6 shots", "Heavy ammo", "Slow fire rate", "Needs precision"]
             },
             
@@ -3129,6 +3129,83 @@
                 bestFor: "Energy-based automatic weapon with unique mechanics",
                 pve: "Interesting option for PvE. Energy weapons have unique feel.",
                 pvp: "Viable in PvP. Different playstyle from conventional weapons."
+            },
+            // Frozen Trail additions (Oct 2026)
+            {
+                weapon: "STILETTO",
+                type: "Battle Rifle",
+                category: "battle",
+                rarity: "Common",
+                damage: 11,
+                fireRate: 25,
+                magazine: 30,
+                range: "52.5m",
+                ammoType: "Light",
+                firingMode: "Semi-Automatic",
+                secondary: "BURLETTA",
+                throwables: ["Light Impact Grenade", "Smoke Grenade"],
+                bestFor: "Early-game light-ammo alternative to the Renegade",
+                pve: "Great starter battle rifle. Light ammo keeps it cheap to run while you build your stash.",
+                pvp: "Solid early PvP option. Won't outgun top-tier rifles but very accessible.",
+                pros: ["Light ammo (cheap)", "Good range", "Early-game friendly", "Common rarity"],
+                cons: ["Lower DPS than Renegade", "Semi-auto only"]
+            },
+            {
+                weapon: "BANTAM",
+                type: "Revolver",
+                category: "hand",
+                rarity: "Uncommon",
+                damage: 28,
+                fireRate: 20,
+                magazine: 6,
+                range: "38.4m",
+                ammoType: "Heavy",
+                firingMode: "Double-Action",
+                secondary: "N/A",
+                throwables: ["Heavy Fuze Grenade", "Lure Grenade"],
+                bestFor: "Heavy-hitting hip-fire revolver for close to mid range",
+                pve: "Strong hip-fire capability makes it forgiving in chaotic fights.",
+                pvp: "Punches hard up close. Heavy ammo gives it an edge against armored targets.",
+                pros: ["High per-shot damage", "Hip-fire capability", "Heavy ammo penetration"],
+                cons: ["Only 6 shots", "Heavy ammo cost", "Replaces Anvil as the Uncommon hand cannon"]
+            },
+            {
+                weapon: "CANTO",
+                type: "SMG",
+                category: "smg",
+                rarity: "Rare",
+                damage: 8,
+                fireRate: 50,
+                magazine: 40,
+                range: "35.7m",
+                ammoType: "Medium",
+                firingMode: "Fully-Automatic",
+                secondary: "BURLETTA",
+                throwables: ["Shrapnel Grenade", "Smoke Grenade"],
+                bestFor: "Rare medium-ammo SMG with larger caliber punch",
+                pve: "Medium ammo gives it an edge over light-ammo SMGs against tougher ARCs.",
+                pvp: "Aggressive CQB weapon. Larger caliber hits harder than the Stitcher.",
+                pros: ["Full-auto", "Medium ammo", "High fire rate", "Rare tier"],
+                cons: ["Short range", "Rare blueprint", "Ammo hungry"]
+            },
+            {
+                weapon: "DOLABRA",
+                type: "Energy Shotgun",
+                category: "special",
+                rarity: "Epic",
+                damage: 35,
+                fireRate: 12,
+                magazine: 4,
+                range: "45.0m",
+                ammoType: "Special",
+                firingMode: "Charge Shot",
+                secondary: "VENATOR",
+                throwables: ["Showstopper", "Tagging Grenade"],
+                bestFor: "Energy shotgun with long-range charged shots",
+                pve: "Charged shots reach far beyond normal shotgun range. Devastating against big ARCs.",
+                pvp: "Unpredictable and punishing. Charge mechanic rewards patience.",
+                pros: ["Long-range charge shots", "Huge burst damage", "Unique energy mechanic"],
+                cons: ["Epic rarity", "Special ammo", "Slow fire rate", "Charge-up time"]
             }
         ];
 
@@ -3369,6 +3446,24 @@
                 detonation: "Never",
                 description: "Always there to lend an ear, should you need it.",
                 bestUse: "Emotional support. Keep one in your inventory for morale. Does not explode (tested extensively)."
+            },
+            {
+                name: "Yank Grenade",
+                category: "utility",
+                damage: "10",
+                radius: "8m pull",
+                detonation: "On impact",
+                description: "Tether-based gadget from the Frozen Trail update. Pulls nearby targets toward its detonation point.",
+                bestUse: "Yank ARC or rival Raiders out of cover and into your line of fire. Works on both."
+            },
+            {
+                name: "Volcanic Rock",
+                category: "damage",
+                damage: "15",
+                radius: "3m",
+                detonation: "On impact",
+                description: "Scavenged throwable. A chunk of volcanic rock - simple, heavy, effective.",
+                bestUse: "Free damage when you find one. Throw it at whatever is closest."
             }
         ];
 
@@ -3433,6 +3528,18 @@
                 extractionPoints: ["Main Facility Elevator", "Medical Wing Exit", "Assembly Workshop Hatch", "East Tunnel Ladder", "West Maintenance Shaft", "Emergency Stairwell (Red section)", "Ventilation Shaft (Colored areas)"],
                 tips: "BEST map for farming coins and Epic recyclables. High PvP activity due to enclosed spaces. CQB weapons essential. Tempest blueprints in any drawers. Magnetic Accelerators at Medical Research/Exodus POIs.",
                 tags: ["pvp", "farming"]
+            },
+            {
+                name: "Pendola Pass",
+                subtitle: "Frozen Trail - Old Italian Settlement",
+                description: "An old Italian settlement and former Exodus transport hub beyond the mountains surrounding the Rust Belt. Added in the Frozen Trail 2.0 update (Oct 8, 2026). Mixes abandoned civilian spaces with Exodus Project remnants: supermarket, town square, observatory, and a buried train depot, with threats both above and below ground. The fallen Emperor, one of the largest ARC walker machines, crashed in the valley and holds rare technology.",
+                bestFor: ["Endgame Content", "New Enemies", "Dynamic Loot", "Vertical Combat"],
+                highValueLoot: ["Fallen Emperor (center) - Rare tech", "Supermarket", "Observatory", "Buried Train Depot", "Town Square"],
+                arcSpawns: "New ARC types: Bully (aggressive quadruped), Skulker (fast drone), Hydra (heavy turret). Frigate appears as a map condition - an airborne vessel to fight through.",
+                extraction: "Ballistic Gondola - new extraction method carrying up to 3 Raiders at a time. Flash Freeze weather event forces you into buildings or Avalanche Shelters when it triggers.",
+                extractionPoints: ["Ballistic Gondola Station", "Emperor Crash Site Hatch", "Observatory Elevator", "Train Depot Tunnel", "Town Square Exit", "Avalanche Shelter (Emergency)"],
+                tips: "Dynamic Loot Zones: an area's loot value rises or falls between raids, so don't commit to the same route every run. Bring the Grappling Hook for verticality. Flash Freeze is unpredictable - always know your nearest shelter. New players can only enter with someone who has unlocked it.",
+                tags: ["pve", "pvp", "farming"]
             }
         ];
 
